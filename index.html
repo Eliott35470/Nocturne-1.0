@@ -1,0 +1,2946 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>NOCTURNE — Le jeu de soirée</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap');
+
+:root{
+  --bg: #0d0912;
+  --bg2: #171022;
+  --card: #1b1428;
+  --magenta: #ff2f92;
+  --cyan: #35e7d1;
+  --yellow: #ffd23f;
+  --violet: #8b5cf6;
+  --text: #f4eefc;
+  --text-dim: #a89bbf;
+  --line: rgba(244,238,252,0.09);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:'Space Grotesk',sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(139,92,246,0.25), transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(255,47,146,0.20), transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(53,231,209,0.12), transparent 40%),
+    var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:24px 16px 60px;
+  overflow-x:hidden;
+}
+h1,h2,h3{font-family:'Archivo Black',sans-serif; margin:0; letter-spacing:0.5px;}
+.wrap{width:100%; max-width:560px;}
+.logo{
+  text-align:center; margin-bottom:28px;
+}
+.logo h1{
+  font-size:clamp(2.2rem,9vw,3.4rem);
+  background:linear-gradient(90deg,var(--magenta),var(--yellow),var(--cyan));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  line-height:1;
+}
+.logo p{color:var(--text-dim); margin-top:8px; font-size:0.95rem;}
+
+/* SCREENS */
+.screen{display:none; width:100%; animation:fadeIn .35s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+.card{
+  background:linear-gradient(160deg, var(--card), var(--bg2));
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:26px 22px;
+  box-shadow:0 20px 50px -20px rgba(0,0,0,0.6);
+}
+
+/* SETUP */
+.player-row{display:flex; gap:10px; margin-bottom:10px;}
+input[type=text]{
+  flex:1;
+  background:var(--bg2);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:14px 16px;
+  border-radius:14px;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:1rem;
+  outline:none;
+}
+input[type=text]:focus{border-color:var(--magenta);}
+.iconbtn{
+  width:48px; height:48px; border-radius:14px; border:none;
+  background:var(--bg2); color:var(--text); font-size:1.3rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line);
+}
+.player-list{display:flex; flex-wrap:wrap; gap:8px; margin:16px 0;}
+.chip{
+  background:rgba(255,47,146,0.12);
+  border:1px solid rgba(255,47,146,0.4);
+  color:var(--text);
+  padding:8px 14px 8px 16px;
+  border-radius:100px;
+  font-size:0.9rem;
+  display:flex; align-items:center; gap:8px;
+}
+.chip button{background:none;border:none;color:var(--magenta);font-size:1rem;cursor:pointer;padding:0;line-height:1;}
+.count-note{color:var(--text-dim); font-size:0.85rem; margin-top:4px;}
+
+button.primary{
+  width:100%;
+  margin-top:18px;
+  padding:16px;
+  border:none;
+  border-radius:16px;
+  font-family:'Archivo Black',sans-serif;
+  font-size:1.05rem;
+  color:#0d0912;
+  background:linear-gradient(90deg,var(--yellow),var(--magenta));
+  cursor:pointer;
+  letter-spacing:0.5px;
+  transition:transform .15s ease;
+}
+button.primary:active{transform:scale(0.97);}
+button.primary:disabled{opacity:0.4; cursor:not-allowed;}
+button.secondary{
+  width:100%;
+  margin-top:10px;
+  padding:14px;
+  border-radius:16px;
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:600;
+  font-size:0.95rem;
+  color:var(--text);
+  background:transparent;
+  border:1px solid var(--line);
+  cursor:pointer;
+}
+
+.rules{color:var(--text-dim); font-size:0.85rem; line-height:1.5; margin-top:18px; border-top:1px solid var(--line); padding-top:16px;}
+.rules b{color:var(--text);}
+
+/* GAME SCREEN */
+.topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+.progress{color:var(--text-dim); font-size:0.85rem;}
+.endbtn{background:none;border:none;color:var(--text-dim); font-size:0.85rem; cursor:pointer; text-decoration:underline;}
+
+.badge{
+  display:inline-block;
+  font-family:'Archivo Black',sans-serif;
+  font-size:0.75rem;
+  letter-spacing:1px;
+  padding:6px 14px;
+  border-radius:100px;
+  margin-bottom:16px;
+}
+.badge.blindtest{background:rgba(53,231,209,0.15); color:var(--cyan); border:1px solid rgba(53,231,209,0.5);}
+.badge.culture{background:rgba(255,210,63,0.15); color:var(--yellow); border:1px solid rgba(255,210,63,0.5);}
+.badge.quidenous{background:rgba(139,92,246,0.2); color:#c4b0ff; border:1px solid rgba(139,92,246,0.5);}
+.badge.action{background:rgba(255,47,146,0.15); color:var(--magenta); border:1px solid rgba(255,47,146,0.5);}
+
+.content-title{font-size:1.5rem; line-height:1.3; margin-bottom:10px; font-weight:700;}
+.content-sub{color:var(--text-dim); font-size:0.95rem; margin-bottom:18px;}
+
+.gorgees-tag{
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(255,210,63,0.12); border:1px solid rgba(255,210,63,0.4);
+  color:var(--yellow); padding:8px 14px; border-radius:100px; font-weight:700; font-size:0.95rem;
+  margin-bottom:16px;
+}
+
+.spotify-btn{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; padding:16px; border-radius:16px; border:none;
+  background:#1DB954; color:#04120a; font-family:'Archivo Black',sans-serif; font-size:1rem;
+  cursor:pointer; margin-bottom:12px;
+}
+
+.answer-box{
+  background:var(--bg2); border:1px dashed var(--line); border-radius:14px;
+  padding:16px; margin:14px 0; display:none;
+}
+.answer-box.show{display:block; animation:fadeIn .3s ease;}
+.answer-box .label{color:var(--text-dim); font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;}
+.artist-reveal{position:relative; overflow:hidden;}
+.answer-box.show.artist-reveal{display:flex; min-height:110px; align-items:flex-end;}
+.artist-bg{position:absolute; inset:0; background-size:cover; background-position:center 15%; opacity:0; transition:opacity .5s ease;}
+.artist-bg.loaded{opacity:0.55;}
+.artist-overlay{position:absolute; inset:0; background:linear-gradient(180deg, rgba(13,9,18,0.1), rgba(13,9,18,0.92) 75%);}
+.answer-content{position:relative; z-index:2; width:100%;}
+
+.options{display:flex; flex-direction:column; gap:10px; margin-bottom:6px;}
+.opt{
+  text-align:left; padding:14px 16px; border-radius:14px;
+  background:var(--bg2); border:1px solid var(--line); color:var(--text);
+  font-family:'Space Grotesk',sans-serif; font-size:0.98rem; cursor:pointer;
+}
+.opt.correct{background:rgba(53,231,209,0.18); border-color:var(--cyan); color:var(--cyan); font-weight:600;}
+.opt.wrong{background:rgba(255,47,146,0.12); border-color:rgba(255,47,146,0.4); opacity:0.6;}
+.opt:disabled{cursor:default;}
+
+.player-picked{
+  text-align:center; padding:22px 14px; margin-bottom:16px;
+  background:linear-gradient(120deg, rgba(255,47,146,0.18), rgba(139,92,246,0.18));
+  border:1px solid rgba(255,47,146,0.4); border-radius:18px;
+}
+.player-picked .who{font-family:'Archivo Black',sans-serif; font-size:1.6rem; color:var(--magenta); margin-top:4px;}
+
+.btnrow{display:flex; gap:10px; margin-top:18px;}
+.btnrow button{flex:1;}
+
+footer{margin-top:30px; color:var(--text-dim); font-size:0.78rem; text-align:center; max-width:520px;}
+
+.spotify-connect-box{
+  background:var(--bg2); border:1px solid var(--line); border-radius:16px;
+  padding:16px; margin-bottom:18px; text-align:center;
+}
+.spotify-connect-box .status{font-size:0.85rem; color:var(--text-dim); margin-top:8px;}
+.spotify-connect-box .status.ok{color:var(--cyan); font-weight:600;}
+.spotify-connect-box .status.err{color:var(--magenta); font-weight:600;}
+
+.settings-gear{
+  position:fixed; top:16px; right:16px; z-index:60;
+  width:46px; height:46px; border-radius:50%;
+  background:var(--card); border:1px solid var(--line);
+  color:var(--text); font-size:1.3rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 20px -8px rgba(0,0,0,0.6);
+}
+
+.modal-overlay{
+  display:none; position:fixed; inset:0; z-index:100;
+  background:rgba(5,3,8,0.75); backdrop-filter:blur(4px);
+  align-items:flex-end; justify-content:center;
+}
+.modal-overlay.open{display:flex;}
+.modal-panel{
+  width:100%; max-width:560px; max-height:88vh;
+  background:linear-gradient(160deg, var(--card), var(--bg2));
+  border:1px solid var(--line); border-radius:24px 24px 0 0;
+  display:flex; flex-direction:column; overflow:hidden;
+  animation:fadeIn .25s ease;
+}
+@media (min-width:640px){
+  .modal-overlay{align-items:center;}
+  .modal-panel{border-radius:24px; max-height:80vh;}
+}
+.modal-header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:20px 22px 14px; border-bottom:1px solid var(--line);
+}
+.modal-header h2{font-size:1.3rem;}
+.modal-close{background:none; border:none; color:var(--text-dim); font-size:1.6rem; cursor:pointer; line-height:1; padding:0 4px;}
+.modal-tabs{display:flex; gap:6px; padding:14px 16px 0; overflow-x:auto;}
+.tab-btn{
+  flex:1; white-space:nowrap; padding:10px 10px; border-radius:12px 12px 0 0;
+  background:transparent; border:none; color:var(--text-dim); font-family:'Space Grotesk',sans-serif;
+  font-size:0.85rem; font-weight:600; cursor:pointer;
+}
+.tab-btn.active{background:var(--bg2); color:var(--text);}
+.modal-body{padding:20px 22px 26px; overflow-y:auto;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+.lang-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+.lang-btn{
+  padding:14px; border-radius:14px; background:var(--bg2); border:1px solid var(--line);
+  color:var(--text); font-family:'Space Grotesk',sans-serif; font-weight:600; cursor:pointer; font-size:0.95rem;
+}
+.lang-btn.active{border-color:var(--magenta); background:rgba(255,47,146,0.12); color:var(--magenta);}
+
+.settings-label{display:block; font-size:0.85rem; color:var(--text-dim); margin-bottom:8px; font-weight:600;}
+input[type=range]{width:100%; accent-color:var(--magenta);}
+
+.admin-cat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;}
+.admin-cat-btn{
+  padding:14px 10px; border-radius:14px; background:var(--bg2); border:1px solid var(--line);
+  color:var(--text); font-family:'Space Grotesk',sans-serif; font-weight:600; cursor:pointer; font-size:0.9rem;
+}
+.admin-cat-btn.active{border-color:var(--cyan); background:rgba(53,231,209,0.12); color:var(--cyan);}
+.admin-entry{
+  background:var(--bg2); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px;
+}
+.admin-entry-text{font-size:0.92rem; margin-bottom:10px; line-height:1.4;}
+.admin-entry-actions{display:flex; gap:8px;}
+.admin-entry-actions button{
+  flex:1; padding:9px; border-radius:10px; border:1px solid var(--line); background:transparent;
+  color:var(--text); font-size:0.82rem; cursor:pointer; font-family:'Space Grotesk',sans-serif;
+}
+.admin-entry-actions .del-btn{color:var(--magenta); border-color:rgba(255,47,146,0.4);}
+.admin-form{background:var(--bg2); border:1px dashed var(--line); border-radius:14px; padding:16px; margin-top:16px;}
+.admin-form input, .admin-form select, .admin-form textarea{
+  width:100%; background:var(--card); border:1px solid var(--line); color:var(--text);
+  padding:11px 13px; border-radius:12px; font-family:'Space Grotesk',sans-serif; font-size:0.92rem;
+  margin-bottom:10px;
+}
+.admin-form textarea{resize:vertical; min-height:60px;}
+.admin-form label{display:block; font-size:0.78rem; color:var(--text-dim); margin-bottom:4px;}
+
+.mode-grid{display:flex; flex-direction:column; gap:12px;}
+.mode-btn{
+  display:flex; align-items:center; gap:14px; text-align:left;
+  padding:16px; border-radius:16px; background:var(--bg2); border:1px solid var(--line);
+  color:var(--text); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+}
+.mode-btn:active{border-color:var(--magenta);}
+.mode-emoji{font-size:1.8rem;}
+.mode-name{display:block; font-family:'Archivo Black',sans-serif; font-size:1.05rem;}
+.mode-desc{display:block; color:var(--text-dim); font-size:0.82rem; margin-top:2px;}
+.mode-btn > span:not(.mode-emoji){display:flex; flex-direction:column;}
+
+.special-card{text-align:center; padding:10px 0;}
+.special-emoji{font-size:3rem; margin-bottom:10px;}
+
+.roulette-wheel-wrap{position:relative; width:220px; height:220px; margin:18px auto;}
+.roulette-pointer{
+  position:absolute; top:-4px; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:11px solid transparent; border-right:11px solid transparent;
+  border-top:18px solid var(--yellow); z-index:3; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+}
+.roulette-wheel{
+  width:220px; height:220px; border-radius:50%;
+  border:7px solid #1b1b1b;
+  box-shadow:0 0 0 3px var(--yellow) inset, 0 18px 45px -12px rgba(0,0,0,0.75);
+  transition:transform 3.6s cubic-bezier(.12,.82,.2,1);
+  position:relative;
+}
+.roulette-hub{
+  position:absolute; top:50%; left:50%; width:52px; height:52px; margin:-26px 0 0 -26px;
+  border-radius:50%; background:radial-gradient(circle at 35% 35%, #555, #0e0e0e);
+  border:3px solid var(--yellow);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Archivo Black',sans-serif; font-size:1.15rem; color:#fff; z-index:2;
+}
+.bet-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0;}
+.bet-btn{
+  padding:16px 10px; border-radius:14px; font-family:'Archivo Black',sans-serif; font-size:0.95rem;
+  border:2px solid var(--line); cursor:pointer;
+}
+.bet-btn.red{background:rgba(220,38,38,0.15); color:#f87171; border-color:rgba(220,38,38,0.5);}
+.bet-btn.black{background:rgba(255,255,255,0.06); color:var(--text); border-color:var(--line);}
+.bet-btn.parity{background:rgba(53,231,209,0.12); color:var(--cyan); border-color:rgba(53,231,209,0.4);}
+.bet-btn.green{background:rgba(34,197,94,0.15); color:#4ade80; border-color:rgba(34,197,94,0.5); grid-column:span 2;}
+.bet-btn:disabled{opacity:0.35; cursor:not-allowed;}
+.wager-row{display:flex; align-items:center; gap:12px; justify-content:center; margin-bottom:6px;}
+.wager-row button{width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:var(--bg2); color:var(--text); font-size:1.2rem; cursor:pointer;}
+.wager-value{font-family:'Archivo Black',sans-serif; font-size:1.4rem; min-width:36px; text-align:center;}
+
+.uc-word-box{
+  background:var(--bg2); border:2px dashed var(--magenta); border-radius:18px; padding:30px 16px;
+  text-align:center; margin:18px 0; cursor:pointer;
+}
+.uc-word-box .word{font-family:'Archivo Black',sans-serif; font-size:1.8rem; color:var(--magenta); margin-top:10px;}
+</style>
+</head>
+<body>
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+
+<button id="settings-gear-btn" class="settings-gear" title="Paramètres">⚙️</button>
+
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <h2 data-i18n="settingsTitle">Paramètres</h2>
+      <button class="modal-close" id="settings-close-btn">×</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="tab-btn active" data-tab="langue">🌐 <span data-i18n="tabLangue">Langue</span></button>
+      <button class="tab-btn" data-tab="son">🔊 <span data-i18n="tabSon">Son</span></button>
+      <button class="tab-btn" data-tab="joueurs">👥 <span data-i18n="tabJoueurs">Joueurs</span></button>
+      <button class="tab-btn" data-tab="admin">🔒 Admin</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="tab-panel active" id="tab-langue">
+        <p class="content-sub" data-i18n="langueNote">L'interface se traduit dans la langue choisie. Le contenu du jeu (chansons, questions, actions) reste en français.</p>
+        <div class="lang-grid">
+          <button class="lang-btn" data-lang="fr">🇫🇷 Français</button>
+          <button class="lang-btn" data-lang="en">🇬🇧 English</button>
+          <button class="lang-btn" data-lang="es">🇪🇸 Español</button>
+          <button class="lang-btn" data-lang="it">🇮🇹 Italiano</button>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-son">
+        <label class="settings-label" data-i18n="ambientVolumeLabel">Volume musique d'ambiance</label>
+        <input type="range" id="ambient-volume-slider" min="0" max="100" value="35">
+        <button class="secondary" id="ambient-mute-btn" style="margin-top:10px;">🔇 <span data-i18n="muteBtn">Couper la musique de fond</span></button>
+        <label class="settings-label" style="margin-top:20px;" data-i18n="spotifyVolumeLabel">Volume Spotify (appareil connecté)</label>
+        <input type="range" id="spotify-volume-slider" min="0" max="100" value="80">
+        <p class="content-sub" style="margin-top:14px;" data-i18n="ambientNote">La musique d'ambiance se coupe automatiquement pendant le Blind Test et reprend juste après.</p>
+      </div>
+
+      <div class="tab-panel" id="tab-joueurs">
+        <div class="player-row">
+          <input type="text" id="settings-player-input" placeholder="Prénom du joueur" maxlength="18">
+          <button class="iconbtn" id="settings-add-player-btn">+</button>
+        </div>
+        <div class="player-list" id="settings-player-list"></div>
+        <div class="count-note" id="settings-player-count-note"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-admin">
+        <div id="admin-locked">
+          <p class="content-sub" data-i18n="adminLockedNote">Zone réservée aux créateurs et modérateurs du jeu.</p>
+          <input type="password" id="admin-code-input" placeholder="Code d'accès" inputmode="numeric" style="width:100%; background:var(--bg2); border:1px solid var(--line); color:var(--text); padding:14px 16px; border-radius:14px; font-family:'Space Grotesk',sans-serif; font-size:1rem;">
+          <button class="primary" id="admin-unlock-btn" style="margin-top:10px;" data-i18n="unlockBtn">Déverrouiller</button>
+          <div class="status err" id="admin-code-error" style="display:none; margin-top:8px;" data-i18n="wrongCode">Code incorrect.</div>
+        </div>
+        <div id="admin-unlocked" style="display:none;">
+          <div class="admin-cat-grid" id="admin-cat-grid">
+            <button class="admin-cat-btn" data-cat="blindtest">🎵 Blind Test (Pogo)</button>
+            <button class="admin-cat-btn" data-cat="blindtestMainstream">🎵 Blind Test (Standalone)</button>
+            <button class="admin-cat-btn" data-cat="culture">🧠 Culture Générale</button>
+            <button class="admin-cat-btn" data-cat="qui">👀 Qui de nous</button>
+            <button class="admin-cat-btn" data-cat="action">🎯 Actions</button>
+            <button class="admin-cat-btn" data-cat="undercover">🕵️ Undercover</button>
+          </div>
+          <button class="primary" id="publish-data-btn" style="margin-bottom:8px;">💾 Sauvegarder les modifications</button>
+          <p class="content-sub" style="margin-bottom:10px;">Ça prépare le contenu à jour ci-dessous. Copie-le, puis colle-le sur GitHub dans un fichier nommé <code>nocturne-data.json</code> pour que ça s'applique chez tous les joueurs.</p>
+          <div id="publish-output" style="display:none; margin-bottom:16px;">
+            <textarea id="publish-textarea" readonly style="width:100%; min-height:140px; background:var(--bg2); border:1px solid var(--line); color:var(--text); border-radius:12px; padding:12px; font-family:monospace; font-size:0.78rem;"></textarea>
+            <button class="secondary" id="copy-publish-btn" style="margin-top:8px;">📋 Copier le contenu</button>
+          </div>
+          <div id="admin-editor"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="logo">
+    <h1>NOCTURNE</h1>
+    <p>Le premier jeu de soirée où tu n'es pas obligé de mettre un SMIC pour avoir des questions et jeux autres que dans la catégorie « soft ».</p>
+    <p style="font-weight:700; margin-top:8px;">Bonne continuation Picolo et TOZ 👋</p>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div class="screen active" id="screen-setup">
+    <div class="card">
+      <h2 style="margin-bottom:6px;" data-i18n="setupTitle">Qui joue ce soir ?</h2>
+      <p class="content-sub" style="margin-bottom:16px;" data-i18n="setupSubtitle">Ajoute entre 3 et 15 joueurs.</p>
+      <div class="player-row">
+        <input type="text" id="player-input" placeholder="Prénom du joueur" maxlength="18" data-i18n-placeholder="playerPlaceholder">
+        <button class="iconbtn" id="add-player-btn">+</button>
+      </div>
+      <div class="player-list" id="player-list"></div>
+      <div class="count-note" id="player-count-note">0 / 15 joueurs</div>
+
+      <div class="spotify-connect-box">
+        <p class="settings-label" style="margin-bottom:10px;">Service musical</p>
+        <div class="lang-grid" style="grid-template-columns:1fr 1fr 1fr; margin-bottom:14px;">
+          <button class="lang-btn active" id="music-service-spotify" data-service="spotify">🟢 Spotify</button>
+          <button class="lang-btn" id="music-service-deezer" data-service="deezer">🎧 Deezer</button>
+          <button class="lang-btn" id="music-service-apple" data-service="apple">🍎 Apple Music</button>
+        </div>
+        <div id="music-service-spotify-panel">
+          <button class="secondary" id="spotify-connect-btn" style="margin-top:0;" data-i18n="spotifyConnectBtn">🎧 Connecter mon compte Spotify</button>
+          <div class="status" id="spotify-status" data-i18n="spotifyStatusDefault">Nécessaire pour lancer les musiques du Blind Test (compte Premium requis)</div>
+          <div id="spotify-device-row" style="display:none; margin-top:12px;">
+            <select id="spotify-device-select" style="width:100%; background:var(--bg2); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px; font-family:'Space Grotesk',sans-serif;"></select>
+            <button class="secondary" id="spotify-refresh-devices-btn" style="margin-top:8px; padding:10px;" data-i18n="refreshDevicesBtn">🔄 Rafraîchir les appareils</button>
+          </div>
+        </div>
+        <div id="music-service-deezer-panel" style="display:none;">
+          <button class="secondary" id="deezer-connect-btn" style="margin-top:0;">🎧 Connecter mon compte Deezer</button>
+          <div class="status err">Pas encore configuré — nécessite la création d'une app développeur Deezer (gratuit, même principe que Spotify).</div>
+        </div>
+        <div id="music-service-apple-panel" style="display:none;">
+          <button class="secondary" id="apple-connect-btn" style="margin-top:0;">🍎 Connecter mon compte Apple Music</button>
+          <div class="status err">Pas encore configuré — nécessite un compte développeur Apple payant (99$/an) pour utiliser MusicKit.</div>
+        </div>
+      </div>
+
+      <button class="primary" id="start-btn" disabled data-i18n="startBtn">Lancer la soirée 🔥</button>
+
+      <div class="rules">
+        <p><b data-i18n="rulesIntro">4 catégories mélangées aléatoirement :</b></p>
+        <p>🎵 <b>Blind Test</b> <span data-i18n="rulesBlindtest">— rap français 2000–2026, le premier qui trouve distribue des enculades.</span><br>
+        🧠 <b>Culture Générale</b> <span data-i18n="rulesCulture">— sport, histoire, géo, sciences, actu, art...</span><br>
+        👀 <b>Qui de nous</b> <span data-i18n="rulesQui">— les autres désignent la bonne personne.</span><br>
+        🎯 <b>Action</b> <span data-i18n="rulesAction">— un joueur au hasard doit relever le défi (ou boire à la place s'il ne le sent pas).</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE SELECT SCREEN -->
+  <div class="screen" id="screen-mode-select">
+    <div class="card">
+      <h2 style="margin-bottom:6px;">Choisissez un mode</h2>
+      <p class="content-sub" style="margin-bottom:20px;">Un mode par manche, vous pourrez toujours en relancer un autre après.</p>
+      <div class="mode-grid">
+        <button class="mode-btn" data-mode="pogo">
+          <span class="mode-emoji">🎉</span>
+          <span class="mode-name">Pogo</span>
+          <span class="mode-desc">Tout mélangé : blind test, culture, qui de nous, actions + surprises</span>
+        </button>
+        <button class="mode-btn" data-mode="blindtest">
+          <span class="mode-emoji">🎵</span>
+          <span class="mode-name">Blind Test</span>
+          <span class="mode-desc">Tubes connus, tous genres et époques</span>
+        </button>
+        <button class="mode-btn" data-mode="culture">
+          <span class="mode-emoji">🧠</span>
+          <span class="mode-name">Culture Générale</span>
+          <span class="mode-desc">Sport, politique, art, géo, science, histoire...</span>
+        </button>
+        <button class="mode-btn" data-mode="roulette">
+          <span class="mode-emoji">🎰</span>
+          <span class="mode-name">Roulette</span>
+          <span class="mode-desc">Rouge, noir, pair, impair ou vert — misez vos enculades</span>
+        </button>
+        <button class="mode-btn" data-mode="undercover">
+          <span class="mode-emoji">🕵️</span>
+          <span class="mode-name">Undercover</span>
+          <span class="mode-desc">Trouvez qui a un mot secret différent</span>
+        </button>
+      </div>
+      <button class="secondary" id="mode-back-btn" style="margin-top:18px;">← Retour</button>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div class="screen" id="screen-game">
+    <div class="topbar">
+      <span class="progress" id="progress-txt">Tour 1</span>
+      <button class="endbtn" id="end-game-btn" data-i18n="endGameBtn">Terminer la partie</button>
+    </div>
+    <div class="card" id="game-card">
+      <!-- injected content -->
+    </div>
+    <div class="btnrow" id="game-btnrow">
+      <button class="primary" id="next-btn" style="margin-top:0;" data-i18n="nextBtn">Suivant →</button>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen" id="screen-end">
+    <div class="card" style="text-align:center;">
+      <h2 style="font-size:1.8rem; margin-bottom:10px;" data-i18n="endTitle">Soirée terminée 🥳</h2>
+      <p class="content-sub" data-i18n="endSub">Merci d'avoir joué à Nocturne. Buvez de l'eau, mangez un truc, et faites rentrer tout le monde en sécurité.</p>
+      <button class="primary" id="restart-btn" data-i18n="restartBtn">Nouvelle partie</button>
+    </div>
+  </div>
+
+
+</div>
+
+<script>
+/* ============================= DATA ============================= */
+
+// --- BLIND TEST : Titre|Artiste|Année ---
+const RAW_SONGS = `
+Boulbi|Booba|2002
+Validé|Booba|2003
+OKLM|Booba|2014
+Kalash|Booba|2015
+DKR|Booba|2015
+Pitbull|Booba|2018
+Trône|Booba|2017
+Rolex|Booba|2020
+Longueur d'Avance|Booba|2007
+Fardeau|Booba|2019
+Petite Sœur|Booba|2010
+La Puissance|Rohff|2001
+Instinct de Survie|Rohff|2006
+Nés sous la même étoile|IAM|1997
+Je danse le mia|IAM|1993
+Independantista|IAM|2013
+DJ|Diam's|2006
+La Boulette|Diam's|2006
+Jeune Demoiselle|Diam's|2003
+Confessions Nocturnes|Diam's|2006
+Tonton du Bled|113|2000
+Les Princes de la Ville|113|1999
+On Fait Comme Ça|Rim'K|2013
+Team BS|La Fouine|2011
+Drôle de Parcours|La Fouine|2007
+Ma Direction|La Fouine|2012
+Gamin de Paris|Sniper|2001
+Wati By Night|Sexion d'Assaut|2010
+Casquette à l'envers|Sexion d'Assaut|2010
+Désolé|Sexion d'Assaut|2010
+Avant qu'elle parte|Sexion d'Assaut|2010
+Tchoin|Kaaris|2013
+Or Noir|Kaaris|2013
+Behek|Kaaris|2013
+Zoo|Kaaris|2013
+Wesh Alors|Jul|2015
+Je Ne Me Sens Pas Bien|Jul|2015
+Tchikita|Jul|2015
+Bande Organisée|Jul, SCH, Naps, Alonzo, Kofs, Solda, Sadek, Elams, Houari|2019
+Bolide Allemand|Jul|2016
+Vroom Vroom|Jul|2020
+La Zone|Jul|2015
+Bolide|Jul|2018
+On Verra|Nekfeu|2015
+Ecrire|Nekfeu|2015
+Le Bruit De La Ville|Nekfeu|2016
+Une Vie|PNL|2015
+Naha|PNL|2016
+Onizuka|PNL|2015
+Au DD|PNL|2019
+Bang|PNL|2019
+DA|PNL|2019
+Deux Frères|PNL|2019
+Blanka|PNL|2015
+Macarena|Damso|2020
+Ipséité|Damso|2017
+Silence|Damso|2016
+Vandal|Damso|2016
+Ninja|Damso|2020
+Julia|Damso|2020
+Coeur En Miettes|Damso|2016
+Peur Des Lions|Damso|2017
+Réel|Damso|2019
+Jefe|Ninho|2019
+Lettre à Une Femme|Ninho|2018
+Elle Veut Du Biff|Ninho|2018
+Multiplié Par 7|Ninho|2019
+Katché|Ninho|2020
+Miles|Ninho|2020
+Suzuki|Ninho|2021
+La Kiffance|Naps|2021
+Charo|Niska|2016
+Réseaux|Niska|2017
+Tout Niquer|Niska|2016
+Bandana|Alonzo|2016
+Guérilla|Soolking|2018
+Liberté|Soolking|2018
+Milano|Soolking, Damso, Ninho|2018
+Nirvana|Dinos|2018
+Taciturne|Dinos|2018
+Chelsea|Josman|2018
+Chocolate|Josman|2019
+Mafia|Zola|2019
+Ghetto Ninja|Zola|2019
+Pilon|Tiakola|2022
+Anti Method|Tiakola|2023
+Rooftop|Werenoi|2023
+Rien à Foutre|Werenoi|2023
+Rentre Bien|Werenoi|2024
+Bad Boy|Fresh|2023
+Fin d'Année|Heuss l'Enfoiré|2020
+Khapta|Heuss l'Enfoiré|2019
+Popopop|Gambi|2019
+Xeu|Vald|2018
+Chocolat|Vald|2019
+NQNT|Vald|2015
+Corleone|Lacrim|2015
+Bella|Maître Gims|2013
+J'me Tire|Maître Gims|2013
+Sur Ma Route|Black M|2014
+Afro Trap Part 3|MHD|2016
+Bien Ou Bien|MHD|2016
+Reine|Dadju|2016
+Compliqué|Dadju|2018
+Kunta Kinté|Koba LaD|2018
+Solide|Koba LaD|2020
+Pyramide|Leto|2016
+Zoulou Gang|Leto|2018
+Sapé Comme Jamais|Youssoupha, Maître Gims|2016
+Coeur Brisé|Djadja & Dinaz|2018
+Cerveau|Djadja & Dinaz|2019
+JVLIVS|SCH|2018
+A7|SCH|2016
+Tiehi|SCH|2020
+Fentanyl|Ziak|2020
+Pochon|Ziak|2019
+Tout Seul|RK|2016
+Bandit|RK|2017
+Lettre à la République|Kery James|2012
+Musique Nègre|Kery James|2016
+Dommage|Bigflo & Oli|2015
+Alors Alors|Bigflo & Oli|2017
+Sacrifice|Bigflo & Oli|2017
+Basique|Orelsan|2017
+La Pluie|Orelsan|2021
+Défaite de Famille|Orelsan|2011
+Suicide Social|Orelsan|2009
+Sale Pute|Orelsan|2009
+Loin|PLK|2019
+Warrior|PLK|2020
+Grec|Da Uzi|2018
+Pincho|Da Uzi|2019
+100 Bornes|13 Block|2019
+MZK|13 Block|2019
+Diamant Noir|Alkpote|2013
+Marijuana|Naza|2017
+1000°C|Lomepal|2017
+Trop Beau|Lomepal|2017
+Bruxelles Vie|Roméo Elvis|2017
+Drill FR|Gazo|2021
+Nouveau Chapitre|Gazo|2022
+La Litanie|Gazo|2021
+Toxique|Gazo|2022
+667|Freeze Corleone|2019
+Autobahn|Freeze Corleone|2019
+Genèse|Freeze Corleone|2019
+Meltdown|Freeze Corleone|2022
+Djina|Werenoi, Gazo|2023
+Fever|Gazo, Tiakola|2023
+Waké|Tiakola, Gazo|2023
+Batman|Ninho, Niska|2021
+Beretta|SDM|2022
+Ma Grosse|SDM|2022
+Frero|SDM|2023
+Doria|ZKR|2020
+Petrouchka|Hamza|2018
+Elle Aime Le Voyou|Vegedream|2017
+Ça Fait Peur|Kaaris, Niska|2018
+La Sauce|Mister You|2016
+`.trim().split("\n").map(l=>{const [t,a,y]=l.split("|"); return {t,a,y};});
+
+// --- CULTURE GENERALE : Question|OptA|OptB|OptC|OptD|IndexCorrect(0-3)|Categorie ---
+const RAW_QUESTIONS = `
+Quelle est la capitale de l'Australie ?|Sydney|Canberra|Melbourne|Perth|1|Géographie
+Quel est le plus long fleuve du monde ?|Amazone|Nil|Yangtsé|Mississippi|1|Géographie
+Combien de pays composent le continent africain ?|42|54|61|39|1|Géographie
+Quel pays a la plus grande superficie du monde ?|Chine|Canada|Russie|États-Unis|2|Géographie
+Quelle mer borde Marseille ?|Mer Noire|Mer Méditerranée|Mer Rouge|Mer Baltique|1|Géographie
+Quelle est la capitale du Canada ?|Toronto|Vancouver|Ottawa|Montréal|2|Géographie
+Quel désert est le plus grand du monde ?|Sahara|Gobi|Antarctique|Kalahari|2|Géographie
+Combien de fuseaux horaires compte la Russie ?|7|9|11|13|2|Géographie
+Quelle est la capitale du Brésil ?|Rio de Janeiro|São Paulo|Brasília|Salvador|2|Géographie
+Quel pays possède le plus grand nombre de fuseaux horaires terrestres ?|Russie|États-Unis|France|Chine|2|Géographie
+Quelle chaîne de montagnes sépare l'Europe de l'Asie ?|Les Alpes|Les Carpates|L'Oural|Les Pyrénées|2|Géographie
+Quelle est la plus haute montagne d'Afrique ?|Kilimandjaro|Mont Kenya|Ras Dashen|Toubkal|0|Géographie
+Quel pays a pour capitale Lisbonne ?|Espagne|Portugal|Italie|Grèce|1|Géographie
+Quel est le plus petit pays du monde ?|Monaco|Saint-Marin|Vatican|Liechtenstein|2|Géographie
+Quelle ville est surnommée la Ville Lumière ?|Rome|Paris|Vienne|Londres|1|Géographie
+Quel océan est le plus grand du monde ?|Atlantique|Indien|Pacifique|Arctique|2|Géographie
+Quelle est la capitale de l'Égypte ?|Alexandrie|Le Caire|Louxor|Gizeh|1|Géographie
+Quel pays compte le plus d'habitants au monde en 2024 ?|Chine|États-Unis|Indonésie|Inde|3|Géographie
+Quel fleuve traverse Paris ?|La Loire|La Garonne|La Seine|Le Rhône|2|Géographie
+Quelle île est la plus grande du monde ?|Madagascar|Bornéo|Groenland|Nouvelle-Guinée|2|Géographie
+Qui a peint la Joconde ?|Michel-Ange|Léonard de Vinci|Raphaël|Botticelli|1|Art
+Quel peintre est célèbre pour avoir coupé son oreille ?|Monet|Van Gogh|Renoir|Dalí|1|Art
+Qui a sculpté le David, exposé à Florence ?|Donatello|Michel-Ange|Bernin|Rodin|1|Art
+Quel mouvement artistique est associé à Salvador Dalí ?|Cubisme|Impressionnisme|Surréalisme|Pop Art|2|Art
+Quel groupe a sorti l'album Thriller ?|The Jackson 5|Michael Jackson|Prince|Earth Wind and Fire|1|Art
+Qui a composé la 9ème symphonie ?|Mozart|Bach|Beethoven|Chopin|2|Art
+Quel peintre est le fondateur du cubisme avec Braque ?|Matisse|Picasso|Cézanne|Gauguin|1|Art
+Dans quel musée se trouve la Joconde ?|Musée d'Orsay|Le Louvre|Centre Pompidou|Musée Rodin|1|Art
+Quel est le vrai nom de l'artiste Stromae ?|Paul Van Haver|Paul Dumont|Jean Vanhoutte|Marc Sterckx|0|Art
+Quel chanteur français a interprété "Ne me quitte pas" ?|Charles Aznavour|Jacques Brel|Léo Ferré|Georges Brassens|1|Art
+Quel est l'instrument emblématique du jazz manouche joué par Django Reinhardt ?|Violon|Piano|Guitare|Trompette|2|Art
+Qui a réalisé le film "Amélie Poulain" ?|Luc Besson|Jean-Pierre Jeunet|Michel Gondry|Mathieu Kassovitz|1|Art
+Quel artiste a peint "La Nuit étoilée" ?|Monet|Van Gogh|Seurat|Cézanne|1|Art
+Quel groupe français a composé la musique du film "Drive" ?|Justice|Daft Punk|Air|College|2|Art
+Quel est le nom du studio d'animation qui a créé Toy Story ?|DreamWorks|Pixar|Illumination|Blue Sky|1|Art
+Qui a écrit "Les Misérables" ?|Émile Zola|Victor Hugo|Gustave Flaubert|Honoré de Balzac|1|Art
+Quel auteur a écrit "Le Petit Prince" ?|Jules Verne|Antoine de Saint-Exupéry|Albert Camus|Marcel Pagnol|1|Art
+Quel compositeur autrichien était un enfant prodige au 18e siècle ?|Beethoven|Mozart|Haydn|Schubert|1|Art
+Dans quel pays est né le tango ?|Espagne|Brésil|Argentine|Cuba|2|Art
+Quel street artiste britannique reste anonyme ?|Invader|Banksy|Shepard Fairey|JR|1|Art
+Quel est le sport national du Japon ?|Judo|Sumo|Karaté|Kendo|1|Sport
+Combien de joueurs compte une équipe de football sur le terrain ?|9|10|11|12|2|Sport
+Quel pays a remporté la Coupe du Monde de football 2018 ?|Croatie|France|Brésil|Allemagne|1|Sport
+Combien de sets faut-il gagner pour remporter un match de tennis en 5 sets ?|2|3|4|5|1|Sport
+Dans quel sport utilise-t-on un "birdie" ?|Golf|Badminton|Tennis de table|Squash|1|Sport
+Quel nageur a remporté 23 médailles d'or olympiques ?|Ian Thorpe|Michael Phelps|Mark Spitz|Ryan Lochte|1|Sport
+Combien de km mesure un marathon ?|40|42,195|39,5|45|1|Sport
+Quel pays a inventé le rugby ?|France|Nouvelle-Zélande|Angleterre|Afrique du Sud|2|Sport
+Combien de joueurs y a-t-il dans une équipe de basket sur le terrain ?|4|5|6|7|1|Sport
+Quel boxeur est surnommé "The Greatest" ?|Mike Tyson|Mohamed Ali|George Foreman|Joe Frazier|1|Sport
+Quel Français a remporté Roland-Garros en 1983 chez les hommes ?|Henri Leconte|Yannick Noah|Guy Forget|Jo-Wilfried Tsonga|1|Sport
+En quelle année la France a-t-elle gagné sa première Coupe du Monde ?|1994|1998|2002|2006|1|Sport
+Combien de temps dure un match de rugby à XV (hors arrêts de jeu) ?|70 minutes|80 minutes|90 minutes|60 minutes|1|Sport
+Quel pays organise les Jeux Olympiques d'été 2028 ?|Paris|Los Angeles|Brisbane|Tokyo|1|Sport
+Quel est le sport pratiqué par Serena Williams ?|Golf|Athlétisme|Tennis|Natation|2|Sport
+Quel club de football est basé au Camp Nou ?|Real Madrid|FC Barcelone|Atlético Madrid|Séville FC|1|Sport
+Combien de points vaut un panier à 3 points au basket ?|2|3|4|1|1|Sport
+Quel pilote français a été champion du monde de F1 en 1985 et 1986 ?|Jean Alesi|Alain Prost|René Arnoux|Olivier Panis|1|Sport
+Dans quel sport évolue Kylian Mbappé ?|Football|Rugby|Handball|Basketball|0|Sport
+Quel pays a remporté le plus de Coupes du Monde de football ?|Allemagne|Brésil|Italie|Argentine|1|Sport
+Qui a été le premier président de la Ve République française ?|Georges Pompidou|Charles de Gaulle|François Mitterrand|René Coty|1|Histoire
+En quelle année a eu lieu la prise de la Bastille ?|1789|1799|1804|1815|0|Histoire
+Quel empereur français a été exilé sur l'île de Sainte-Hélène ?|Louis XVI|Napoléon Bonaparte|Napoléon III|Charles X|1|Histoire
+En quelle année le mur de Berlin est-il tombé ?|1987|1989|1991|1993|1|Histoire
+Quelle guerre a opposé la France à la Prusse en 1870 ?|Guerre de Crimée|Guerre franco-prussienne|Première Guerre mondiale|Guerre de succession|1|Histoire
+Quel traité a mis fin à la Première Guerre mondiale ?|Traité de Vienne|Traité de Versailles|Traité de Rome|Traité de Yalta|1|Histoire
+Qui était le roi de France pendant la Révolution française ?|Louis XIV|Louis XV|Louis XVI|Louis XVIII|2|Histoire
+En quelle année a eu lieu le débarquement de Normandie ?|1942|1943|1944|1945|2|Histoire
+Quelle civilisation a construit les pyramides de Gizeh ?|Les Romains|Les Grecs|Les Égyptiens|Les Mayas|2|Histoire
+Qui a été la première femme à voler seule au-dessus de l'Atlantique ?|Amelia Earhart|Valentina Terechkova|Bessie Coleman|Jacqueline Auriol|0|Histoire
+Quel pays a construit la Grande Muraille ?|Japon|Corée|Chine|Mongolie|2|Histoire
+Quel événement a déclenché la Première Guerre mondiale ?|Le krach de 1929|L'assassinat de François-Ferdinand|La révolution russe|Le traité de Versailles|1|Histoire
+Quelle reine d'Égypte est célèbre pour sa relation avec Jules César et Marc Antoine ?|Néfertiti|Cléopâtre|Hatchepsout|Ankhésenamon|1|Histoire
+En quelle année l'Homme a-t-il marché sur la Lune pour la première fois ?|1965|1969|1971|1975|1|Histoire
+Quel philosophe grec fut le maître d'Alexandre le Grand ?|Socrate|Platon|Aristote|Pythagore|2|Histoire
+Quelle bataille marque la défaite finale de Napoléon en 1815 ?|Austerlitz|Waterloo|Trafalgar|Iéna|1|Histoire
+Quel mur a séparé Berlin-Est et Berlin-Ouest de 1961 à 1989 ?|Le mur de Berlin|Le rideau de fer|La ligne Maginot|Le mur d'Hadrien|0|Histoire
+Quelle explorateur est crédité de la découverte de l'Amérique en 1492 ?|Vasco de Gama|Christophe Colomb|Magellan|Marco Polo|1|Histoire
+Quel pharaon a régné le plus longtemps dans l'Égypte antique ?|Toutânkhamon|Ramsès II|Khéops|Akhenaton|1|Histoire
+Quelle est la date de la signature de la Déclaration des droits de l'homme en France ?|1789|1791|1793|1804|0|Histoire
+Combien d'os compte le corps humain adulte ?|186|206|226|246|1|Science
+Quelle planète est la plus proche du Soleil ?|Vénus|Mercure|Mars|Terre|1|Science
+Quel est le symbole chimique de l'or ?|Ag|Au|Or|Go|1|Science
+Combien de chromosomes possède l'être humain ?|42|44|46|48|2|Science
+Quelle est la vitesse de la lumière dans le vide (arrondie) ?|150 000 km/s|300 000 km/s|450 000 km/s|1 000 000 km/s|1|Science
+Quel gaz les plantes absorbent-elles principalement pour la photosynthèse ?|Oxygène|Azote|Dioxyde de carbone|Hydrogène|2|Science
+Quel scientifique a formulé la théorie de la relativité ?|Isaac Newton|Albert Einstein|Niels Bohr|Galilée|1|Science
+Quel est l'organe le plus volumineux du corps humain ?|Le foie|Le cerveau|La peau|Les poumons|2|Science
+Quelle est la formule chimique de l'eau ?|CO2|H2O|O2|NaCl|1|Science
+Combien de temps met la Terre à faire le tour du Soleil ?|24h|30 jours|365,25 jours|1000 jours|2|Science
+Quel est le plus grand organe interne du corps humain ?|Les reins|Le foie|L'estomac|Le pancréas|1|Science
+Quelle est l'unité de mesure de la force ?|Le watt|Le newton|Le joule|Le pascal|1|Science
+Quel animal a le cœur le plus gros du règne animal ?|L'éléphant|La girafe|La baleine bleue|Le rhinocéros|2|Science
+Combien de dents possède un adulte en moyenne ?|28|30|32|34|2|Science
+Quelle est la plus petite unité de matière selon la chimie ?|La molécule|L'atome|L'électron|Le noyau|1|Science
+Quel scientifique a découvert la pénicilline ?|Louis Pasteur|Alexander Fleming|Marie Curie|Robert Koch|1|Science
+Quelle est la température de congélation de l'eau en Celsius ?|-10°C|0°C|10°C|4°C|1|Science
+Quelle planète est surnommée la "planète rouge" ?|Jupiter|Mars|Saturne|Vénus|1|Science
+Combien de litres de sang un corps humain adulte contient-il environ ?|3 litres|5 litres|8 litres|10 litres|1|Science
+Quel élément est essentiel à la respiration humaine ?|Azote|Oxygène|Hélium|Carbone|1|Science
+Qui est l'actuel Secrétaire général de l'ONU (2026) ?|Ban Ki-moon|António Guterres|Kofi Annan|Boutros Boutros-Ghali|1|Actualité
+Combien de pays composent l'Union européenne en 2026 ?|25|27|29|31|1|Actualité
+Dans quelle ville se sont déroulés les JO d'été 2024 ?|Tokyo|Los Angeles|Paris|Londres|2|Actualité
+Quelle monnaie est utilisée dans la majorité de l'Union européenne ?|Le franc|L'euro|Le dollar|La livre|1|Actualité
+Quel est le pays hôte de la Coupe du Monde de football 2026 ?|Qatar|Canada, États-Unis, Mexique|Brésil|Allemagne|1|Actualité
+Quelle organisation internationale a son siège à Genève et s'occupe de la santé mondiale ?|UNESCO|OMS|UNICEF|FAO|1|Actualité
+Quel est le plus grand réseau social par nombre d'utilisateurs actifs ?|Instagram|TikTok|Facebook|X (Twitter)|2|Actualité
+Quelle entreprise a créé le modèle d'IA ChatGPT ?|Google|OpenAI|Meta|Microsoft|1|Actualité
+Quel pays a quitté l'Union européenne en 2020 ?|Norvège|Suisse|Royaume-Uni|Islande|2|Actualité
+Quelle entreprise a créé le modèle d'IA Claude ?|OpenAI|Google DeepMind|Anthropic|Meta AI|2|Actualité
+Quelle institution fixe les taux d'intérêt de la zone euro ?|La Banque de France|La BCE|Le FMI|La Banque mondiale|1|Actualité
+Quel réseau social est reconnu pour ses vidéos courtes popularisées dès 2019 ?|Snapchat|TikTok|Vine|YouTube Shorts|1|Actualité
+Quelle ville accueille le siège de l'Union européenne ?|Strasbourg|Bruxelles|Luxembourg|La Haye|1|Actualité
+Quel pays est le premier producteur mondial de pétrole en 2025 ?|Arabie Saoudite|Russie|États-Unis|Irak|2|Actualité
+Quel événement sportif mondial a lieu tous les 4 ans en alternance été/hiver ?|La Coupe du Monde|Les Jeux Olympiques|Le Super Bowl|Le Tour de France|1|Actualité
+Quel régime politique caractérise la France ?|Monarchie|République présidentielle et parlementaire|Théocratie|Fédération|1|Politique
+Combien de mandats présidentiels consécutifs la Constitution française autorise-t-elle au maximum ?|1|2|3|Illimité|1|Politique
+Quel est le nom de l'Assemblée qui vote les lois avec le Sénat en France ?|Le Conseil d'État|L'Assemblée nationale|Le Conseil constitutionnel|La Cour de cassation|1|Politique
+Combien de temps dure un mandat présidentiel en France depuis 2000 ?|7 ans|5 ans|6 ans|4 ans|1|Politique
+Quel pays fonctionne avec un régime de monarchie parlementaire, dont la reine Elizabeth II puis le roi Charles III ?|France|Royaume-Uni|Allemagne|Italie|1|Politique
+Comment appelle-t-on le chef du gouvernement en France ?|Le Président|Le Premier ministre|Le Garde des Sceaux|Le Préfet|1|Politique
+Quelle institution est chargée de vérifier la conformité des lois à la Constitution en France ?|Le Sénat|Le Conseil constitutionnel|La Cour des comptes|Le Conseil d'État|1|Politique
+Quel âge minimum faut-il avoir pour voter en France ?|16 ans|18 ans|21 ans|25 ans|1|Politique
+Quel pays a un système fédéral avec 50 états ?|Le Canada|Les États-Unis|L'Australie|Le Brésil|1|Politique
+Combien de sénateurs siègent au Sénat français environ ?|348|400|577|150|0|Politique
+Quel est le nom du palais où siège le gouvernement français (Premier ministre) ?|Le Palais Bourbon|L'Hôtel Matignon|Le Palais de l'Élysée|Le Palais du Luxembourg|1|Politique
+Quel organe international réunit la majorité des pays du monde pour maintenir la paix ?|L'OTAN|L'ONU|L'Union africaine|Le G7|1|Politique
+Quel pays possède le droit de véto au Conseil de sécurité de l'ONU avec la France, les USA, le Royaume-Uni et la Chine ?|Allemagne|Russie|Inde|Brésil|1|Politique
+Quel est le nom de la loi fondamentale qui régit un pays ?|Le décret|La Constitution|Le traité|L'ordonnance|1|Politique
+Combien de pays sont membres permanents du Conseil de sécurité de l'ONU ?|3|5|7|9|1|Politique
+Quel est le plus grand animal terrestre du monde ?|Le rhinocéros|L'éléphant d'Afrique|L'hippopotame|La girafe|1|Science
+Quel est l'animal le plus rapide sur terre ?|Le lion|Le guépard|L'antilope|Le léopard|1|Science
+Combien de cœurs possède une pieuvre ?|1|2|3|4|2|Science
+Quel est le seul mammifère capable de voler ?|L'écureuil volant|La chauve-souris|Le lémurien|Le phalanger|1|Science
+Quelle est la durée de gestation d'un éléphant ?|9 mois|12 mois|18 mois|22 mois|3|Science
+Quel est le plus grand mammifère marin du monde ?|Le cachalot|L'orque|La baleine bleue|Le requin baleine|2|Science
+Combien de pattes possède une araignée ?|6|8|10|12|1|Science
+Quel oiseau est incapable de voler mais excellent nageur en Antarctique ?|L'autruche|Le manchot|L'émeu|Le kiwi|1|Science
+Quel est le plus vieux instrument de musique connu au monde ?|Le tambour|La flûte|La harpe|Le violon|1|Art
+Quel pays a inventé le sushi tel qu'on le connaît aujourd'hui ?|Chine|Corée|Japon|Thaïlande|2|Culture
+Quelle est la boisson la plus consommée au monde après l'eau ?|Le café|Le thé|Le vin|La bière|1|Culture
+Quel pays produit le plus de vin au monde ?|France|Italie|Espagne|États-Unis|1|Culture
+Quel plat est originaire d'Italie et composé de pâte, tomate et fromage ?|Les lasagnes|La pizza|Les raviolis|Le risotto|1|Culture
+Quelle épice est la plus chère au monde ?|La vanille|Le safran|La cardamome|La cannelle|1|Culture
+Quel pays a inventé le chocolat chaud à base de cacao ?|Suisse|Belgique|Mexique (civilisation aztèque/maya)|France|2|Culture
+Quelle est la langue la plus parlée au monde en nombre de locuteurs natifs ?|Anglais|Mandarin|Espagnol|Hindi|1|Culture
+Quel pays est à l'origine du carnaval de Rio ?|Portugal|Brésil|Cuba|Colombie|1|Culture
+Quel fruit est un faux fruit botaniquement parlant ?|La pomme|La fraise|La banane|L'orange|1|Culture
+Quel pays a inventé le café expresso ?|France|Italie|Turquie|Éthiopie|1|Culture
+Quel est le plat national du Japon le plus connu à l'international ?|Le ramen|Les sushis|Le curry japonais|Le tempura|1|Culture
+Quelle danse est originaire d'Argentine ?|La salsa|Le tango|La samba|Le flamenco|1|Culture
+Quel pays a inventé la fondue au fromage ?|France|Suisse|Italie|Autriche|1|Culture
+Quelle est la ville considérée comme la capitale mondiale de la mode ?|Milan|Paris|New York|Londres|1|Culture
+Quel jeu de société est basé sur l'achat de rues et de propriétés ?|Le Cluedo|Le Monopoly|Le Risk|Le Trivial Pursuit|1|Culture
+Quel super-héros est aussi connu sous le nom de Bruce Wayne ?|Superman|Batman|Iron Man|Spider-Man|1|Culture
+Quelle saga de films culte a pour héros Luke Skywalker ?|Star Trek|Star Wars|Le Seigneur des Anneaux|Dune|1|Culture
+Quel réalisateur a créé la saga Harry Potter au cinéma (premier film) ?|Peter Jackson|Chris Columbus|Alfonso Cuarón|David Yates|1|Culture
+Combien de films compte la saga cinématographique Star Wars originale (trilogie classique) ?|2|3|4|5|1|Culture
+Quelle série culte se déroule dans les Sept Couronnes ?|The Walking Dead|Game of Thrones|Vikings|The Witcher|1|Culture
+Quel pays a inventé les jeux olympiques antiques ?|Rome|Égypte|Grèce|Perse|2|Histoire
+Quel est le plus haut sommet du monde ?|K2|Mont Blanc|Everest|Kilimandjaro|2|Géographie
+Quel est le plus grand désert froid du monde ?|Sahara|Gobi|Antarctique|Atacama|2|Géographie
+Quel pays possède le plus de fuseaux horaires après la Russie et la France ?|États-Unis|Chine|Canada|Australie|0|Géographie
+Quelle rivière traverse Londres ?|La Seine|La Tamise|Le Rhin|Le Danube|1|Géographie
+Quel pays a pour capitale Wellington ?|Australie|Nouvelle-Zélande|Fidji|Afrique du Sud|1|Géographie
+Quelle est la capitale de l'Espagne ?|Barcelone|Madrid|Séville|Valence|1|Géographie
+Quel détroit sépare l'Europe de l'Afrique ?|Détroit de Béring|Détroit de Gibraltar|Détroit de Malacca|Détroit du Bosphore|1|Géographie
+Quel pays est traversé par l'équateur et possède l'Amazonie ?|Pérou|Brésil|Colombie|Venezuela|1|Géographie
+Quelle est la capitale de l'Italie ?|Milan|Venise|Rome|Naples|2|Géographie
+Quel est le nom du courant artistique de Monet et Renoir ?|Le cubisme|L'impressionnisme|Le fauvisme|Le romantisme|1|Art
+Qui a écrit "Roméo et Juliette" ?|Molière|Shakespeare|Victor Hugo|Racine|1|Art
+Quel groupe de rock britannique a sorti l'album "Abbey Road" ?|The Rolling Stones|The Beatles|Pink Floyd|Queen|1|Art
+Quel est le nom du célèbre opéra de Sydney ?|Sydney Concert Hall|Sydney Opera House|Harbour Theatre|Bennelong Hall|1|Art
+Quel peintre espagnol est le père du cubisme avec Braque ?|Dalí|Miró|Picasso|Goya|2|Art
+Combien de cordes possède une guitare classique ?|4|5|6|7|2|Art
+Quel est le tempo le plus rapide en musique classique ?|Andante|Presto|Adagio|Largo|1|Art
+Quel monument parisien a été construit pour l'Exposition universelle de 1889 ?|L'Arc de Triomphe|La Tour Eiffel|Le Sacré-Cœur|Le Panthéon|1|Art
+Quel écrivain français a écrit "Le Comte de Monte-Cristo" ?|Victor Hugo|Alexandre Dumas|Gustave Flaubert|Émile Zola|1|Art
+Quel est le plus grand stade de football du monde en capacité ?|Wembley|Camp Nou|Rungrado May Day Stadium|Maracanã|2|Sport
+Combien de temps dure une mi-temps au football ?|30 minutes|45 minutes|40 minutes|50 minutes|1|Sport
+Quel pays a inventé le badminton moderne ?|Chine|Inde|Angleterre|Indonésie|2|Sport
+Quel athlète jamaïcain détient le record du 100m ?|Justin Gatlin|Usain Bolt|Tyson Gay|Yohan Blake|1|Sport
+Combien de manches gagnantes faut-il pour remporter un set au volley ?|21 points|25 points|30 points|15 points|1|Sport
+Quel sport se joue avec un "palet" sur glace ?|Le curling|Le hockey sur glace|Le patinage|Le bobsleigh|1|Sport
+Dans quel sport peut-on marquer un "ace" ?|Football|Tennis|Basketball|Rugby|1|Sport
+Quel pays a organisé la Coupe du Monde de football 2022 ?|Russie|Qatar|Émirats Arabes Unis|Arabie Saoudite|1|Sport
+Quel sport pratique-t-on à Roland-Garros ?|Le golf|Le tennis|L'équitation|L'athlétisme|1|Sport
+Quel cycliste a remporté le plus de Tours de France (record controversé inclus) ?|Eddy Merckx|Bernard Hinault|Lance Armstrong|Miguel Indurain|2|Sport
+Quel philosophe a écrit "Le Discours de la méthode" ?|Voltaire|René Descartes|Jean-Jacques Rousseau|Emmanuel Kant|1|Histoire
+Quel physicien a formulé la loi de la gravitation universelle ?|Galilée|Isaac Newton|Albert Einstein|Kepler|1|Science
+Quel est le nom de la galaxie qui contient notre système solaire ?|Andromède|La Voie Lactée|Le Grand Nuage de Magellan|Le Triangle|1|Science
+Quel est le plus grand récif corallien du monde ?|La Grande Barrière de Corail|Le Récif de Belize|Le Triangle de Corail|Le Récif de la Mer Rouge|0|Géographie
+Quelle est la capitale de la Norvège ?|Stockholm|Oslo|Helsinki|Copenhague|1|Géographie
+Quel pays partage une frontière terrestre avec le plus grand nombre de pays au monde ?|Russie|Chine|Brésil|France (avec territoires)|1|Géographie
+`.trim().split("\n").map(l=>{
+  const parts=l.split("|");
+  return {q:parts[0], opts:[parts[1],parts[2],parts[3],parts[4]], correct:parseInt(parts[5]), cat:parts[6]};
+});
+
+// --- QUI DE NOUS ---
+const RAW_QUI = `
+Qui de nous a le plus gros bodycount ?
+Qui de nous est le plus susceptible de tromper son/sa partenaire ?
+Qui de nous ment le mieux ?
+Qui de nous finira marié en premier ?
+Qui de nous a le plus de chances de finir célibataire à vie ?
+Qui de nous enverrait un nude sans hésiter ?
+Qui de nous a déjà pleuré à cause d'une story Instagram ?
+Qui de nous est le/la plus fou/folle amoureux/se en ce moment ?
+Qui de nous serait capable de sortir avec l'ex d'un pote ?
+Qui de nous a le plus de matchs sur Tinder ?
+Qui de nous craquerait en premier dans une soirée à trois ?
+Qui de nous a déjà fait un plan cul le soir même d'un match ?
+Qui de nous est le/la plus jaloux/se en couple ?
+Qui de nous ghosterait quelqu'un sans remords ?
+Qui de nous fait semblant le plus souvent au lit ?
+Qui de nous a le plus de chances de se marier à Vegas par accident ?
+Qui de nous a déjà embrassé quelqu'un pour un pari ?
+Qui de nous est le/la plus infidèle du groupe ?
+Qui de nous serait le/la meilleur(e) escort si il/elle devait le faire ?
+Qui de nous garde le plus de contacts d'ex dans son téléphone ?
+Qui de nous enverrait un message à 3h du matin à son ex ?
+Qui de nous a déjà simulé un coup de foudre pour éviter d'être seul(e) ?
+Qui de nous tromperait pour de l'argent ?
+Qui de nous est le/la plus obsédé(e) par le sexe ?
+Qui de nous a déjà couché avec quelqu'un le premier soir ?
+Qui de nous serait capable de sortir avec la personne la plus riche du groupe pour l'argent ?
+Qui de nous garde le plus longtemps rancune ?
+Qui de nous ferait un strip-tease sans hésiter pour 100€ ?
+Qui de nous a le plus de piquant en soirée ?
+Qui de nous finirait sur OnlyFans si il/elle en avait besoin ?
+Qui de nous a déjà menti sur son âge pour draguer ?
+Qui de nous est le/la plus manipulateur/trice ?
+Qui de nous craque le plus vite devant un physique ?
+Qui de nous a le plus de piercings ou tatouages cachés (potentiels) ?
+Qui de nous serait le/la plus jaloux/se si son/sa meilleur(e) ami(e) sortait avec son crush ?
+Qui de nous se ferait larguer par SMS sans problème ?
+Qui de nous a déjà eu un coup de foudre pour quelqu'un du groupe ?
+Qui de nous garderait un secret même face à un mensonge grave ?
+Qui de nous est le/la plus à l'aise pour draguer en soirée ?
+Qui de nous finirait par épouser quelqu'un rencontré sur une appli ?
+Qui de nous a le plus tendance à enchaîner les relations sans respirer ?
+Qui de nous ferait le plus de kilomètres pour un date ?
+Qui de nous serait capable d'embrasser un inconnu pour gagner un pari ?
+Qui de nous a déjà fait semblant d'être ailleurs pour éviter un date ?
+Qui de nous est le/la plus romantique du groupe ?
+Qui de nous oserait draguer le/la crush d'un(e) ami(e) ?
+Qui de nous a le plus souvent le seum en amour ?
+Qui de nous finirait influenceur/euse si l'occasion se présentait ?
+Qui de nous a déjà fait style d'aimer un film/une série pour plaire à quelqu'un ?
+Qui de nous a le plus de talent pour la drague par message ?
+Qui de nous serait capable de sortir avec deux personnes en même temps sans se faire choper ?
+Qui de nous a déjà stalké un(e) ex sur les réseaux pendant des heures ?
+Qui de nous est le/la plus à même de pleurer devant un film Disney ?
+Qui de nous partirait vivre à l'étranger sans hésiter ?
+Qui de nous a le plus tendance à exagérer ses histoires ?
+Qui de nous ferait le meilleur agent secret ?
+Qui de nous s'évanouirait devant une célébrité ?
+Qui de nous a le plus de chances de se faire arnaquer un jour ?
+Qui de nous serait capable de manger un truc dégueulasse pour de l'argent ?
+Qui de nous a la plus grosse dette envers quelqu'un dans la pièce ?
+Qui de nous se ferait tatouer un prénom sur un coup de tête ?
+Qui de nous a déjà fait croire qu'il/elle était riche pour impressionner ?
+Qui de nous est le/la plus radin(e) du groupe ?
+Qui de nous ferait n'importe quoi pour un plat de son enfance ?
+Qui de nous a déjà volé un truc dans un magasin ?
+Qui de nous a le plus de chance de finir en prison un jour (pour un truc bête) ?
+Qui de nous se ferait avoir par une arnaque évidente ?
+Qui de nous ment le mieux à ses parents ?
+Qui de nous a la vie la plus instagrammable ?
+Qui de nous est le/la plus stressé(e) avant un examen ou un entretien ?
+Qui de nous partirait en voyage sur un coup de tête sans prévenir personne ?
+Qui de nous survivrait le plus longtemps dans un film d'horreur ?
+Qui de nous ferait la meilleure télé-réalité ?
+Qui de nous est le/la plus à même de devenir célèbre un jour ?
+Qui de nous a le sens de l'orgueil le plus développé ?
+Qui de nous accepterait de manger un insecte pour 50€ ?
+Qui de nous a déjà pleuré de rire jusqu'à s'étouffer ?
+Qui de nous s'énerve le plus vite en soirée ?
+Qui de nous a le plus tendance à casser l'ambiance sans le vouloir ?
+Qui de nous serait capable de dormir dehors pour gagner un pari ?
+Qui de nous a le plus mauvais goût musical du groupe ?
+Qui de nous s'habille le mieux quand il/elle sort ?
+Qui de nous a le plus de chances de devenir riche un jour ?
+Qui de nous fait le plus la fête sans jamais être fatigué(e) ?
+Qui de nous s'endort le premier en soirée ?
+Qui de nous a bu le plus vite dans l'histoire du groupe ?
+Qui de nous vomirait en premier ce soir ?
+Qui de nous appelle son ex le plus souvent en soirée ?
+Qui de nous a le rire le plus reconnaissable ?
+Qui de nous est le/la plus drôle sans le savoir ?
+Qui de nous danse le pire sur la piste ?
+Qui de nous a le plus tendance à disparaître en soirée sans prévenir ?
+Qui de nous chante le plus faux ?
+Qui de nous prend le plus de selfies par soirée ?
+Qui de nous garde le mieux son calme même bourré(e) ?
+Qui de nous a fait le pire choix vestimentaire un soir de fête ?
+Qui de nous a le plus de chance de finir aux urgences un jour à cause d'une soirée ?
+Qui de nous rentrerait à pied plutôt que payer un taxi ?
+Qui de nous a le plus fort caractère du groupe ?
+Qui de nous cache le mieux ses sentiments ?
+Qui de nous a le plus grand melon (ego) du groupe ?
+Qui de nous serait le/la pire coloc du monde ?
+Qui de nous prend soin des autres même bourré(e) ?
+Qui de nous serait capable de conduire toute la nuit sans se plaindre ?
+Qui de nous se perd le plus facilement même avec un GPS ?
+Qui de nous a le plus tendance à tout filmer en soirée ?
+Qui de nous garde le mieux un secret ?
+Qui de nous serait un très bon menteur en interrogatoire de police ?
+Qui de nous a le plus tendance à parler à des inconnus en soirée ?
+Qui de nous a le sourire le plus contagieux ?
+Qui de nous a l'humour le plus noir ?
+Qui de nous survivrait le mieux seul(e) sur une île déserte ?
+Qui de nous a la plus grande gueule du groupe ?
+Qui de nous ferait la meilleure blague sous pression ?
+Qui de nous est le/la plus susceptible ?
+Qui de nous change d'avis le plus souvent ?
+Qui de nous fait la sieste la plus longue ?
+Qui de nous garde le plus longtemps un t-shirt troué par flemme ?
+Qui de nous a le plus de likes sur ses photos en général ?
+Qui de nous mangerait une pizza entière à lui/elle seul(e) sans problème ?
+Qui de nous cuisine le mieux du groupe ?
+Qui de nous ne sait absolument pas cuisiner ?
+Qui de nous a la plus belle voiture (ou en rêve le plus) ?
+Qui de nous serait capable de sécher un anniversaire pour rester chez soi ?
+Qui de nous répond le plus vite aux messages ?
+Qui de nous laisse le plus en "vu" sans répondre ?
+Qui de nous serait le/la meilleur(e) parent du groupe ?
+Qui de nous a le plus peur du noir encore aujourd'hui ?
+Qui de nous ferait le/la meilleur(e) chroniqueur/euse télé ?
+Qui de nous a la meilleure répartie ?
+`.trim().split("\n").filter(Boolean).map(line=>({text: line}));
+
+// --- ACTIONS (mode "hot") ---
+const RAW_ACTIONS = `
+Bois ta boisson cul-sec.
+Embrasse ton voisin ou ta voisine de droite.
+Fais un lap dance à la personne de ton choix pendant 15 secondes.
+Envoie un message vocal coquin à quelqu'un dans le groupe (choisis avec humour).
+Raconte ton fantasme le plus fou au groupe.
+Échange un vêtement avec la personne à ta gauche pour le reste de la manche.
+Fais un compliment sincère et sensuel à la personne de ton choix.
+Danse de façon sexy sur la prochaine chanson qui passe.
+Bois 3 enculades les yeux fermés.
+Décris ton pire date en 30 secondes, sans respirer.
+Chuchote quelque chose de coquin à l'oreille de ton/ta voisin(e).
+Fais semblant de draguer la personne en face de toi pendant 1 minute.
+Enlève un vêtement de ton choix (chaussettes exclues).
+Donne un massage de 30 secondes à la personne à ta droite.
+Bois une enculade pour chaque personne présente que tu as déjà trouvée attirante.
+Raconte la chose la plus embarrassante que tu aies faite pour séduire quelqu'un.
+Fais un bisou dans le cou à la personne de ton choix.
+Simule un appel où tu largues quelqu'un, en improvisant.
+Échange ta place avec quelqu'un et assieds-toi sur ses genoux pour le tour suivant.
+Bois 2 enculades et révèle le prénom de ton dernier crush.
+Fais deviner un fantasme mimé sans parler, le groupe doit deviner.
+Envoie un texto "je pense à toi" à un contact au hasard de ton téléphone (si tu es à l'aise).
+Laisse le groupe fouiller ton historique Instagram (likes) pendant 20 secondes.
+Propose un "rendez-vous" imaginaire très osé à la personne en face de toi.
+Bois cul-sec si tu as déjà menti pour éviter un date.
+Fais un strip-tease jusqu'à 2 vêtements retirés (t-shirt/chaussettes).
+Raconte ta pire performance au lit sans donner de nom.
+Embrasse la main de la personne à ta gauche façon grand séducteur/séductrice.
+Danse un slow avec la personne de ton choix pendant 20 secondes.
+Décris en détail ton type de partenaire idéal, version très explicite.
+Bois une enculade par ex que tu as encore en tête.
+Fais un compliment très cash sur le physique de la personne en face de toi.
+Chante une chanson d'amour en fixant quelqu'un dans les yeux.
+Laisse la personne à ta droite te faire un suçon (ou refuse et bois 4 enculades).
+Raconte le message le plus osé que tu aies reçu ou envoyé.
+Imite un bruit très explicite pendant 5 secondes, le groupe doit deviner le mot.
+Bois 3 enculades si tu as déjà eu un plan à trois en tête sans jamais le faire.
+Fais semblant d'être en pleine rupture dramatique avec un objet de la pièce.
+Échange un massage des épaules avec la personne à ta gauche pendant 30 secondes.
+Propose un jeu de rôle improvisé de ton choix avec quelqu'un du groupe (soft).
+Bois cul-sec si tu as déjà trompé ou pensé à tromper quelqu'un.
+Raconte ta technique de drague la plus ratée.
+Fais un bisou volé à la personne de ton choix.
+Avoue devant tout le monde qui, dans la pièce, tu trouves le/la plus attirant(e).
+Bois 2 enculades et raconte ton premier baiser en détail.
+Simule un date parfait avec la personne en face de toi, à voix haute.
+Fais deviner ton prénom d'artiste porno improvisé (nom d'animal + rue d'enfance).
+Bois cul-sec si tu as déjà eu un coup de cœur pour quelqu'un dans la pièce.
+Enlève tes chaussures et chaussettes et laisse la personne à ta gauche te faire un massage des pieds.
+Décris la personne la plus canon que tu aies jamais vue IRL.
+Fais 10 secondes de danse très suggestive sur demande du groupe.
+Raconte ton red flag préféré chez un(e) partenaire, celui que tu adores quand même.
+Bois une enculade si tu as déjà fait un doigt d'honneur à un ex.
+Propose un "vérité" très intime que tu acceptes de révéler tout de suite.
+Simule une scène de jalousie improvisée avec la personne de ton choix.
+Bois cul-sec si tu es déjà sorti(e) avec deux personnes en même temps.
+Fais un compliment coquin à chaque personne du groupe, chacun son tour.
+Laisse le groupe choisir ta prochaine réplique de drague à utiliser en soirée.
+Raconte ton pire moment de honte pendant un rapport (sans détails trop précis).
+Échange ton siège avec quelqu'un pour un câlin de 20 secondes.
+Bois 3 enculades si tu as déjà pleuré pour un(e) ex.
+Fais deviner ta position préférée en mimant des gestes (sans le dire).
+Propose un cheers coquin en fixant la personne de ton choix dans les yeux.
+Raconte ta plus grosse honte en soirée.
+Bois cul-sec ou avoue ton plus gros mensonge amoureux.
+Fais une déclaration d'amour exagérée et dramatique à un objet de la pièce.
+Laisse le groupe te maquiller ou te coiffer pendant 1 minute.
+Bois 2 enculades si tu as déjà envoyé un texto bourré que tu regrettes.
+Propose un pari coquin à la personne en face de toi pour le reste de la soirée.
+Raconte ta pire technique de drague ratée en soirée.
+Fais semblant d'être un influenceur/euse et vends un produit imaginaire de façon très sensuelle.
+Bois cul-sec si tu as déjà eu le seum de voir un ex en soirée.
+Échange un compliment très explicite avec la personne à ta droite.
+Danse collé-serré avec la personne de ton choix pendant 15 secondes.
+Fais deviner un mot très hot en le mimant seulement avec le visage.
+Bois 3 enculades et avoue la chose la plus folle que tu aies faite en soirée.
+Propose de jouer "action ou vérité" version hot avec la personne en face de toi, une seule question.
+Raconte le pire compliment qu'on t'ait fait en soirée.
+Bois cul-sec si tu as déjà fait croire à quelqu'un que tu l'aimais pour éviter une dispute.
+Fais un câlin de 20 secondes à la personne que tu connais le moins bien dans la pièce.
+Propose une danse improvisée avec un objet comme partenaire imaginaire, façon séduction.
+Bois 2 enculades si tu es déjà tombé(e) amoureux/se en une soirée.
+Raconte le message le plus gênant que tu aies envoyé au mauvais destinataire.
+Fais deviner un film érotique connu en le mimant (soft, sans gestes explicites).
+Bois cul-sec si tu as déjà stalké un(e) ex après minuit.
+Propose à quelqu'un du groupe un check très théâtral façon "on se kiffe".
+Fais un compliment sur la voix de la personne à ta gauche, façon charme absolu.
+Bois 3 enculades et raconte ta pire soirée Tinder.
+Improvise une scène de rupture au ralenti avec la personne de ton choix.
+Fais deviner ton animal totem sexuel en 3 mots seulement.
+Bois cul-sec si tu as déjà fait un strip-tease, même en solo chez toi.
+Propose une "battle de charme" avec quelqu'un : qui séduit le mieux le groupe en 20 secondes.
+Raconte la chose la plus osée que tu as faite pour te faire remarquer par quelqu'un.
+Fais un compliment très direct sur le sourire de la personne en face de toi.
+Bois 2 enculades si tu as déjà simulé un orgasme.
+Propose de jouer les mains chaudes : la personne à ta gauche pose ses mains sur tes épaules 20 secondes.
+Raconte le pire prénom que tu as crié au mauvais moment (ou invente un scénario drôle).
+Bois cul-sec si tu es déjà sorti(e) avec l'ex d'un(e) ami(e).
+Fais un slow imaginaire très théâtral avec un coussin en pensant à quelqu'un du groupe.
+Propose au groupe de voter qui, dans la pièce, a le regard le plus charmeur.
+Bois 3 enculades et avoue ton premier surnom coquin donné par un(e) partenaire.
+Fais deviner "chaud ou froid" avec des gestes très suggestifs pour un mot donné par le groupe.
+Raconte le pire endroit où tu as embrassé quelqu'un.
+Bois cul-sec si tu as déjà eu un date qui a mal tourné à cause de l'alcool.
+Propose un compliment "cheesy" digne d'un film romantique à la personne de ton choix.
+Fais une pose sexy façon magazine pendant que le groupe prend une photo souvenir.
+Bois 2 enculades si tu as déjà eu un crush sur le/la meilleur(e) ami(e) de ton/ta partenaire.
+Raconte ta chanson "de cul" préférée et pourquoi.
+Bois cul-sec si tu t'es déjà endormi(e) pendant un date.
+Fais un compliment détaillé sur la tenue de quelqu'un, façon défilé de mode très sensuel.
+Propose au groupe un "cul-sec collectif" en comptant jusqu'à 3.
+Raconte la pire raison que tu as donnée pour annuler un date au dernier moment.
+Bois 3 enculades si tu as déjà répondu "toi aussi" après un "je t'aime".
+Fais deviner ton pire souvenir de soirée en le mimant, sans un mot.
+Propose une "danse de la séduction" improvisée sur la musique en cours.
+Bois cul-sec si tu as déjà regardé le téléphone de ton/ta partenaire en cachette.
+Raconte comment tu dragues quand tu es bourré(e), version démonstration en direct.
+Fais un compliment sincère et un peu gênant à la personne que tu connais depuis le moins longtemps.
+Bois 2 enculades et avoue le pire mensonge que tu as dit pour éviter un date raté.
+Propose au groupe de voter ton "type" dans la salle, sans dire de nom, juste des détails.
+Raconte ta pire "friend zone" et comment tu l'as vécue.
+Bois cul-sec si tu as déjà craqué pour un ex de nouveau après une rupture.
+Fais deviner une réplique de séduction culte de film, en la jouant très théâtralement.
+Propose un check main dans la main façon "couple depuis 10 ans" avec la personne de ton choix, 10 secondes.
+Bois 3 enculades si tu as déjà pleuré en écoutant une chanson d'amour seul(e) chez toi.
+Raconte le compliment le plus bizarre qu'on t'ait fait en drague.
+Fais une déclaration improvisée en essayant de convaincre le groupe que tu es le/la meilleur(e) partenaire possible.
+Bois cul-sec si tu as déjà utilisé une fausse excuse pour partir tôt d'un date raté.
+Propose à la personne en face de toi un "cheers les yeux dans les yeux" sans rire, sinon rebelote.
+Raconte le surnom le plus gênant que quelqu'un t'a donné en soirée.
+Bois 2 enculades et raconte ta pire technique pour faire du charme sur les réseaux.
+Fais deviner "attirant ou pas" pour des célébrités données par le groupe, en mimant ta réaction.
+Propose une pose de couple photo avec la personne de ton choix, façon shooting glamour.
+Bois cul-sec si tu t'es déjà fait recaler en dragant quelqu'un ce soir même.
+Raconte la chanson que tu écoutes en boucle quand tu penses à quelqu'un.
+Fais un compliment très sincère à la personne assise le plus loin de toi.
+Bois 3 enculades si tu as déjà changé de story pour faire réagir un crush.
+Propose au groupe une mini battle de regards insistants avec la personne de ton choix, 15 secondes sans rire.
+Raconte ta pire excuse pour ne pas répondre à un message.
+Bois cul-sec si tu penses être la personne la plus "chaude" dans cette pièce ce soir.
+Fais deviner ton "red flag" personnel en mode charade.
+Propose de faire un cheers "à l'envers" (bras croisés) avec la personne de ton choix.
+Bois 2 enculades si tu as déjà stalké le profil d'un crush avant un date.
+Raconte ta pire "technique" de rattrapage après avoir dit un truc gênant en drague.
+Fais un compliment théâtral digne d'une demande en mariage improvisée.
+Bois cul-sec si tu as déjà eu deux conversations de drague en même temps sans que personne ne le sache.
+Propose une "danse lente" mimée avec un objet en pensant très fort à quelqu'un.
+Raconte ton pire flirt raté sur les réseaux sociaux.
+Bois 3 enculades et avoue combien de temps tu as mis à répondre à ton crush actuel/dernier.
+Fais deviner la personne du groupe que tu trouves la plus charismatique, en donnant seulement 3 indices.
+Propose un check façon "on se marie demain" avec la personne de ton choix.
+Bois cul-sec si tu as déjà annulé un date pour rester chez toi.
+Raconte le compliment le plus fort qu'on t'ait fait de toute ta vie.
+Fais une pose glamour et laisse le groupe voter la meilleure du soir.
+Bois 2 enculades si tu as déjà eu un date organisé par un(e) ami(e) qui a mal tourné.
+Propose une "battle de compliments" avec la personne de ton choix, chacun son tour, 3 rounds.
+Raconte ta plus grosse gêne pendant un date.
+Bois cul-sec si tu as déjà simulé un texto reçu pour éviter une situation gênante.
+Fais deviner ton crush de lycée en donnant 3 indices sans donner le prénom.
+Propose un compliment "à l'ancienne" très romantique à quelqu'un du groupe.
+Bois 3 enculades si tu as déjà fait semblant de connaître un sujet pour impressionner un date.
+Raconte le pire "vu" que tu as laissé sans réponse à quelqu'un d'important pour toi.
+Fais une déclaration très théâtrale à la bouteille la plus proche de toi.
+Bois cul-sec si tu penses avoir déjà brisé un cœur sans le vouloir.
+Propose au groupe de voter qui, ce soir, a le plus de "charisme naturel".
+Raconte la chanson qui te met direct dans l'ambiance en soirée.
+Bois 2 enculades et avoue ton pire jugement rapide sur quelqu'un lors d'un date.
+Fais deviner un emoji très suggestif que le groupe doit interpréter correctement.
+Propose une accolade "un peu trop longue" avec la personne de ton choix, façon complice de toujours.
+Bois cul-sec si tu as déjà eu un date qui s'est fini beaucoup trop tôt à cause de toi.
+Raconte comment tu réagirais si ton crush actuel entrait dans la pièce maintenant.
+Fais un compliment sur les yeux de la personne en face de toi, façon très sincère.
+Bois 3 enculades si tu as déjà eu un date avec quelqu'un que tu ne trouvais pas si attirant, juste pour l'expérience.
+Propose au groupe de désigner "le/la plus probable à te faire craquer ce soir", sans filtre.
+`.trim().split("\n").filter(Boolean).map(line=>({text: line}));
+
+// --- BLIND TEST MAINSTREAM (mode standalone, tous genres sauf blues/jazz) : Titre|Artiste|Année ---
+const RAW_SONGS_MAINSTREAM = `
+Billie Jean|Michael Jackson|1983
+Sweet Dreams|Eurythmics|1983
+Take On Me|a-ha|1985
+Livin' on a Prayer|Bon Jovi|1986
+Don't Stop Believin'|Journey|1981
+Africa|Toto|1982
+Like a Prayer|Madonna|1989
+I Wanna Dance with Somebody|Whitney Houston|1987
+Smells Like Teen Spirit|Nirvana|1991
+Wonderwall|Oasis|1995
+Where Is the Love|Black Eyed Peas|2003
+Hips Don't Lie|Shakira|2006
+Umbrella|Rihanna|2007
+Poker Face|Lady Gaga|2008
+Toxic|Britney Spears|2003
+Since U Been Gone|Kelly Clarkson|2004
+Mr Brightside|The Killers|2003
+Seven Nation Army|The White Stripes|2003
+Get Lucky|Daft Punk|2013
+Rolling in the Deep|Adele|2010
+Uptown Funk|Mark Ronson, Bruno Mars|2014
+Shape of You|Ed Sheeran|2017
+Blinding Lights|The Weeknd|2019
+Levitating|Dua Lipa|2020
+As It Was|Harry Styles|2022
+Flowers|Miley Cyrus|2023
+Dernière Danse|Indila|2014
+Alors on Danse|Stromae|2010
+Formidable|Stromae|2013
+Djadja|Aya Nakamura|2018
+Tout Oublier|Angèle|2019
+On Ecrit sur les Murs|Kids United|2015
+Aïcha|Khaled|1996
+Ella Elle L'a|France Gall|1993
+La Tribu de Dana|Manau|1998
+Femme Like U|K.Maro|2004
+Dernier Domicile Connu|Bernard Lavilliers|1988
+Désenchantée|Mylène Farmer|1991
+Je Veux|Zaz|2010
+Papaoutai|Stromae|2013
+Balance Ton Quoi|Angèle|2018
+Freed From Desire|Gala|1996
+Rhythm Is a Dancer|Snap!|1992
+Blue Monday|New Order|1983
+Personal Jesus|Depeche Mode|1989
+Enjoy the Silence|Depeche Mode|1990
+Cotton Eye Joe|Rednex|1994
+What Is Love|Haddaway|1993
+Mambo No 5|Lou Bega|1999
+Sandstorm|Darude|2000
+One More Time|Daft Punk|2000
+Around the World|Daft Punk|1997
+Music|Madonna|2000
+Can't Get You Out of My Head|Kylie Minogue|2001
+Hey Ya|Outkast|2003
+Crazy in Love|Beyoncé|2003
+Hot in Herre|Nelly|2002
+In da Club|50 Cent|2003
+Lose Yourself|Eminem|2002
+Without Me|Eminem|2002
+Empire State of Mind|Jay-Z, Alicia Keys|2009
+Just Dance|Lady Gaga|2008
+I Gotta Feeling|Black Eyed Peas|2009
+Party Rock Anthem|LMFAO|2011
+Somebody That I Used to Know|Gotye|2011
+Payphone|Maroon 5|2012
+Radioactive|Imagine Dragons|2012
+Roar|Katy Perry|2013
+Happy|Pharrell Williams|2013
+Wake Me Up|Avicii|2013
+Waka Waka|Shakira|2010
+Firework|Katy Perry|2010
+Titanium|David Guetta, Sia|2011
+Don't Let Me Down|The Chainsmokers|2016
+Closer|The Chainsmokers|2016
+Believer|Imagine Dragons|2017
+Havana|Camila Cabello|2017
+Despacito|Luis Fonsi|2017
+Sunflower|Post Malone|2018
+Bad Guy|Billie Eilish|2019
+Old Town Road|Lil Nas X|2019
+Dance Monkey|Tones and I|2019
+Watermelon Sugar|Harry Styles|2020
+Save Your Tears|The Weeknd|2020
+Peaches|Justin Bieber|2021
+Stay|The Kid LAROI, Justin Bieber|2021
+Industry Baby|Lil Nas X|2021
+About Damn Time|Lizzo|2022
+Anti-Hero|Taylor Swift|2022
+Unholy|Sam Smith, Kim Petras|2022
+Cruel Summer|Taylor Swift|2019
+Vampire|Olivia Rodrigo|2023
+Sympathique|Pink Martini|1997
+Everybody|Backstreet Boys|1997
+...Baby One More Time|Britney Spears|1998
+Bye Bye Bye|NSYNC|2000
+I Want It That Way|Backstreet Boys|1999
+Larger Than Life|Backstreet Boys|1999
+It's My Life|Bon Jovi|2000
+American Idiot|Green Day|2004
+In the End|Linkin Park|2001
+Numb|Linkin Park|2003
+Boulevard of Broken Dreams|Green Day|2004
+Chasing Cars|Snow Patrol|2006
+Viva la Vida|Coldplay|2008
+Clocks|Coldplay|2002
+Fix You|Coldplay|2005
+Use Somebody|Kings of Leon|2008
+Home|Edward Sharpe & The Magnetic Zeros|2010
+Riptide|Vance Joy|2013
+Thinking Out Loud|Ed Sheeran|2014
+Photograph|Ed Sheeran|2014
+Someone Like You|Adele|2011
+Hello|Adele|2015
+Shake It Off|Taylor Swift|2014
+Bad Romance|Lady Gaga|2009
+`.trim().split("\n").map(l=>{const [t,a,y]=l.split("|"); return {t,a,y};});
+
+// --- UNDERCOVER : paires de mots (civil|undercover) ---
+const RAW_UNDERCOVER_PAIRS = `
+Café|Thé
+Chien|Chat
+Plage|Piscine
+Pizza|Tarte
+Netflix|YouTube
+Voiture|Moto
+Été|Printemps
+Facebook|Instagram
+Vin|Bière
+Foot|Rugby
+Iphone|Android
+Paris|Lyon
+Mer|Océan
+Sandale|Basket
+Guitare|Piano
+Docteur|Infirmier
+Pluie|Neige
+Chocolat|Bonbon
+Avion|Train
+Pain|Croissant
+Salle de sport|Piscine
+Camping|Hôtel
+Frites|Chips
+Cinéma|Théâtre
+Whatsapp|SMS
+Randonnée|Escalade
+Sushi|Ramen
+Champagne|Vin
+Montagne|Colline
+Tatouage|Piercing
+Ordinateur|Tablette
+Barbecue|Pique-nique
+Karaoké|Concert
+Trottinette|Vélo
+Sauna|Hammam
+Yoga|Pilates
+`.trim().split("\n").filter(Boolean).map(line=>{
+  const [civil, undercover] = line.split("|");
+  return { civil, undercover };
+});
+
+/* ============================= STATE ============================= */
+let players = [];
+const MAX_PLAYERS = 15;
+
+// Données mutables (modifiables depuis l'espace admin), initialisées depuis les listes de base
+let songsData = RAW_SONGS.slice();
+let songsDataMainstream = RAW_SONGS_MAINSTREAM.slice();
+let undercoverPairsData = RAW_UNDERCOVER_PAIRS.slice();
+let questionsData = RAW_QUESTIONS.slice();
+let quiData = RAW_QUI.slice();
+let actionsData = RAW_ACTIONS.slice();
+
+const PERSIST_KEY = 'nocturne_admin_data_v1';
+
+function loadPersistedData(){
+  try{
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed.songs) && parsed.songs.length) songsData = parsed.songs;
+    if(Array.isArray(parsed.songsMainstream) && parsed.songsMainstream.length) songsDataMainstream = parsed.songsMainstream;
+    if(Array.isArray(parsed.questions) && parsed.questions.length) questionsData = parsed.questions;
+    if(Array.isArray(parsed.qui) && parsed.qui.length) quiData = parsed.qui;
+    if(Array.isArray(parsed.actions) && parsed.actions.length) actionsData = parsed.actions;
+    if(Array.isArray(parsed.undercover) && parsed.undercover.length) undercoverPairsData = parsed.undercover;
+  }catch(e){ /* données locales corrompues ou absentes, on garde les valeurs par défaut */ }
+}
+
+// Charge le fichier publié sur GitHub (partagé par TOUS les joueurs qui ouvrent le jeu),
+// puis applique par-dessus d'éventuelles modifications locales pas encore publiées (mode test admin).
+async function loadPublishedData(){
+  try{
+    const res = await fetch('./nocturne-data.json', { cache: 'no-store' });
+    if(res.ok){
+      const data = await res.json();
+      if(Array.isArray(data.songs) && data.songs.length) songsData = data.songs;
+      if(Array.isArray(data.songsMainstream) && data.songsMainstream.length) songsDataMainstream = data.songsMainstream;
+      if(Array.isArray(data.questions) && data.questions.length) questionsData = data.questions;
+      if(Array.isArray(data.qui) && data.qui.length) quiData = data.qui;
+      if(Array.isArray(data.actions) && data.actions.length) actionsData = data.actions;
+      if(Array.isArray(data.undercover) && data.undercover.length) undercoverPairsData = data.undercover;
+    }
+  }catch(e){ /* pas encore de fichier publié sur GitHub, on garde les valeurs par défaut */ }
+  loadPersistedData();
+  Object.keys(decks).forEach(refillDeck);
+}
+loadPublishedData();
+
+function persistData(){
+  try{
+    localStorage.setItem(PERSIST_KEY, JSON.stringify({
+      songs: songsData, songsMainstream: songsDataMainstream, questions: questionsData,
+      qui: quiData, actions: actionsData, undercover: undercoverPairsData
+    }));
+  }catch(e){}
+}
+
+let decks = { blindtest: [], blindtestMainstream: [], culture: [], qui: [], action: [] };
+let categoryQueue = [];
+let turnCount = 0;
+let currentSlideType = null;
+let currentPlayer = null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function refillDeck(type){
+  if(type === 'undercover') return; // l'Undercover ne pioche pas dans un paquet, pas de deck à reconstruire
+  let source;
+  if(type==='blindtest') source = songsData;
+  else if(type==='blindtestMainstream') source = songsDataMainstream;
+  else if(type==='culture') source = questionsData;
+  else if(type==='qui') source = quiData;
+  else if(type==='action') source = actionsData;
+  decks[type] = shuffle(source);
+}
+
+function drawFrom(type){
+  if(decks[type].length===0) refillDeck(type);
+  return decks[type].pop();
+}
+
+function buildCategoryQueue(){
+  // weighted mix, mostly even, refill/shuffle whenever empty
+  categoryQueue = shuffle(['blindtest','culture','qui','action']);
+}
+
+function nextCategory(){
+  if(categoryQueue.length===0) buildCategoryQueue();
+  return categoryQueue.pop();
+}
+
+function randBetween(min, max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+/* ---- Pogo scheduling state ---- */
+let currentMode = 'pogo';
+let pogoRoundCount = 0;
+let nextSpecialAt = randBetween(15,20);
+let nextPyramidAt = 50;
+let pyramidIsIndividual = true;
+let nextAutorouteAt = 35;
+let autoroutePool = [];
+let pendingSpecialSlides = [];
+
+function drawAutoroutePlayer(){
+  if(autoroutePool.length===0) autoroutePool = shuffle(players);
+  return autoroutePool.pop();
+}
+
+function scheduleSpecialsIfDue(){
+  pogoRoundCount++;
+  if(pogoRoundCount >= nextPyramidAt){
+    pendingSpecialSlides.push({ type:'pyramide', mode: pyramidIsIndividual ? 'individuel' : 'equipe' });
+    pyramidIsIndividual = !pyramidIsIndividual;
+    nextPyramidAt = pogoRoundCount + 50;
+  }
+  if(pogoRoundCount >= nextAutorouteAt){
+    pendingSpecialSlides.push({ type:'autoroute', player: drawAutoroutePlayer() });
+    nextAutorouteAt = pogoRoundCount + 35;
+  }
+  if(pogoRoundCount >= nextSpecialAt){
+    if(Math.random() < 0.5){
+      const queue = shuffle(players);
+      queue.forEach(p => pendingSpecialSlides.push({ type:'roulette', player: p, pogo:true }));
+    } else {
+      pendingSpecialSlides.push({ type:'undercover-start' });
+    }
+    nextSpecialAt = pogoRoundCount + randBetween(15,20);
+  }
+}
+
+/* ============================= SETUP LOGIC ============================= */
+const playerInput = document.getElementById('player-input');
+const addBtn = document.getElementById('add-player-btn');
+const playerListEl = document.getElementById('player-list');
+const countNote = document.getElementById('player-count-note');
+const startBtn = document.getElementById('start-btn');
+
+function renderPlayers(){
+  const countText = `${players.length} / ${MAX_PLAYERS} ${t('playersSuffix')}`;
+  [ [playerListEl, countNote], [document.getElementById('settings-player-list'), document.getElementById('settings-player-count-note')] ].forEach(([listEl, countEl])=>{
+    if(!listEl) return;
+    listEl.innerHTML = '';
+    players.forEach((p, i)=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `${p} <button data-i="${i}">×</button>`;
+      chip.querySelector('button').addEventListener('click', ()=>{
+        players.splice(i,1);
+        renderPlayers();
+      });
+      listEl.appendChild(chip);
+    });
+    if(countEl) countEl.textContent = countText;
+  });
+  startBtn.disabled = players.length < 3;
+  addBtn.disabled = players.length >= MAX_PLAYERS;
+  playerInput.disabled = players.length >= MAX_PLAYERS;
+  const settingsInput = document.getElementById('settings-player-input');
+  const settingsAddBtn = document.getElementById('settings-add-player-btn');
+  if(settingsAddBtn) settingsAddBtn.disabled = players.length >= MAX_PLAYERS;
+  if(settingsInput) settingsInput.disabled = players.length >= MAX_PLAYERS;
+}
+
+function addPlayerFrom(inputEl){
+  const val = inputEl.value.trim();
+  if(!val) return;
+  if(players.length >= MAX_PLAYERS) return;
+  if(players.some(p=>p.toLowerCase()===val.toLowerCase())){
+    inputEl.value='';
+    return;
+  }
+  players.push(val);
+  inputEl.value='';
+  renderPlayers();
+  inputEl.focus();
+}
+
+function addPlayer(){
+  const val = playerInput.value.trim();
+  if(!val) return;
+  if(players.length >= MAX_PLAYERS) return;
+  if(players.some(p=>p.toLowerCase()===val.toLowerCase())){
+    playerInput.value='';
+    return;
+  }
+  players.push(val);
+  playerInput.value='';
+  renderPlayers();
+  playerInput.focus();
+}
+
+addBtn.addEventListener('click', addPlayer);
+playerInput.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ e.preventDefault(); addPlayer(); }
+});
+
+startBtn.addEventListener('click', ()=>{
+  if(players.length < 3) return;
+  if(spotifyPlayer && typeof spotifyPlayer.activateElement === 'function'){
+    spotifyPlayer.activateElement();
+  }
+  showScreen('screen-mode-select');
+});
+
+document.getElementById('mode-back-btn').addEventListener('click', ()=>{
+  showScreen('screen-setup');
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    startGameWithMode(btn.getAttribute('data-mode'));
+  });
+});
+
+function startGameWithMode(mode){
+  currentMode = mode;
+  pogoRoundCount = 0;
+  nextSpecialAt = randBetween(15,20);
+  nextPyramidAt = 50;
+  pyramidIsIndividual = true;
+  nextAutorouteAt = 35;
+  autoroutePool = [];
+  pendingSpecialSlides = [];
+  turnCount = 0;
+
+  if(mode === 'pogo'){
+    Object.keys(decks).forEach(refillDeck);
+    buildCategoryQueue();
+  } else if(mode === 'blindtest'){
+    decks.blindtestMainstream = shuffle(songsDataMainstream);
+  } else if(mode === 'culture'){
+    refillDeck('culture');
+  } else if(mode === 'roulette'){
+    // pas de file d'attente en mode autonome : boucle infinie
+  } else if(mode === 'undercover'){
+    pendingSpecialSlides.push({ type:'undercover-start' });
+  }
+
+  showScreen('screen-game');
+  renderNextSlide();
+  startAmbientMusic();
+}
+
+/* ============================= GAME LOGIC ============================= */
+const gameCard = document.getElementById('game-card');
+const nextBtn = document.getElementById('next-btn');
+const progressTxt = document.getElementById('progress-txt');
+const endGameBtn = document.getElementById('end-game-btn');
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function loadArtistPhoto(artistRaw){
+  const bg = document.getElementById('artist-bg');
+  if(!bg) return;
+  const name = artistRaw.split(',')[0].split(' feat')[0].split(' & ')[0].trim();
+  try{
+    const res = await fetch('https://fr.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(name));
+    if(res.ok){
+      const data = await res.json();
+      if(data.thumbnail && data.thumbnail.source){
+        bg.style.backgroundImage = `url('${data.thumbnail.source}')`;
+        bg.classList.add('loaded');
+        return;
+      }
+    }
+  }catch(e){ /* pas de photo trouvée, on garde le fond par défaut */ }
+}
+
+/* ============================= SPOTIFY INTEGRATION ============================= */
+const SPOTIFY_CLIENT_ID = '0c503500bb784c768d579b144f835104';
+const SPOTIFY_REDIRECT_URI = 'https://eliott35470.github.io/Nocturne-1.0/';
+const SPOTIFY_SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
+
+let spotifyPlayer = null;
+let spotifyDeviceId = null;
+let spotifyPlayerReady = false;
+
+function generateRandomString(length){
+  const possible='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let text='';
+  for(let i=0;i<length;i++) text += possible.charAt(Math.floor(Math.random()*possible.length));
+  return text;
+}
+
+async function sha256(plain){
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  return window.crypto.subtle.digest('SHA-256', data);
+}
+
+function base64urlencode(arraybuffer){
+  let str='';
+  const bytes = new Uint8Array(arraybuffer);
+  for(let i=0;i<bytes.byteLength;i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function generateCodeChallenge(verifier){
+  const hashed = await sha256(verifier);
+  return base64urlencode(hashed);
+}
+
+async function spotifyLogin(){
+  const verifier = generateRandomString(64);
+  sessionStorage.setItem('sp_verifier', verifier);
+  const challenge = await generateCodeChallenge(verifier);
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: SPOTIFY_REDIRECT_URI,
+    scope: SPOTIFY_SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: challenge
+  });
+  window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+async function exchangeCodeForToken(code){
+  const verifier = sessionStorage.getItem('sp_verifier');
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    grant_type: 'authorization_code',
+    code: code,
+    redirect_uri: SPOTIFY_REDIRECT_URI,
+    code_verifier: verifier
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: params
+  });
+  const data = await res.json();
+  if(data.access_token){
+    sessionStorage.setItem('sp_access_token', data.access_token);
+    sessionStorage.setItem('sp_refresh_token', data.refresh_token || '');
+    sessionStorage.setItem('sp_expires_at', String(Date.now() + data.expires_in*1000));
+  }
+  return data;
+}
+
+async function refreshAccessToken(){
+  const refresh_token = sessionStorage.getItem('sp_refresh_token');
+  if(!refresh_token) return null;
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    grant_type: 'refresh_token',
+    refresh_token
+  });
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: params
+  });
+  const data = await res.json();
+  if(data.access_token){
+    sessionStorage.setItem('sp_access_token', data.access_token);
+    if(data.refresh_token) sessionStorage.setItem('sp_refresh_token', data.refresh_token);
+    sessionStorage.setItem('sp_expires_at', String(Date.now() + data.expires_in*1000));
+    return data.access_token;
+  }
+  return null;
+}
+
+async function getValidAccessToken(){
+  const token = sessionStorage.getItem('sp_access_token');
+  if(!token) return null;
+  const expiresAt = parseInt(sessionStorage.getItem('sp_expires_at')||'0');
+  if(Date.now() > expiresAt - 60000){
+    return await refreshAccessToken();
+  }
+  return token;
+}
+
+function updateSpotifyUI(){
+  const statusEl = document.getElementById('spotify-status');
+  const btnEl = document.getElementById('spotify-connect-btn');
+  const deviceRow = document.getElementById('spotify-device-row');
+  if(!statusEl || !btnEl) return;
+  const connected = !!sessionStorage.getItem('sp_access_token');
+  if(connected){
+    btnEl.textContent = '✅ Spotify connecté';
+    statusEl.textContent = 'Choisis où la musique doit jouer (ex : ton téléphone, une enceinte...) :';
+    statusEl.className = 'status ok';
+    if(deviceRow) deviceRow.style.display = 'block';
+    loadSpotifyDevices();
+  } else {
+    btnEl.textContent = '🎧 Connecter mon compte Spotify';
+    statusEl.textContent = 'Nécessaire pour lancer les musiques du Blind Test (compte Premium requis)';
+    statusEl.className = 'status';
+    if(deviceRow) deviceRow.style.display = 'none';
+  }
+}
+
+async function loadSpotifyDevices(){
+  const token = await getValidAccessToken();
+  const select = document.getElementById('spotify-device-select');
+  if(!token || !select) return;
+  try{
+    const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    const externalDevices = (data.devices || []).filter(d => d.id !== spotifyDeviceId);
+    select.innerHTML = '';
+
+    if(spotifyDeviceId){
+      const opt = document.createElement('option');
+      opt.value = spotifyDeviceId;
+      opt.textContent = '🎧 Cet appareil (recommandé — ne se met jamais en veille)';
+      select.appendChild(opt);
+    }
+    externalDevices.forEach(d=>{
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.name} (${d.type})${d.is_active ? ' — actif' : ''}`;
+      select.appendChild(opt);
+    });
+    if(select.options.length === 0){
+      const opt = document.createElement('option');
+      opt.textContent = "Aucun appareil trouvé — patiente quelques secondes puis rafraîchis";
+      select.appendChild(opt);
+      return;
+    }
+    const saved = sessionStorage.getItem('sp_selected_device_id');
+    const savedStillExists = Array.from(select.options).some(o=>o.value===saved);
+    select.value = savedStillExists ? saved : (spotifyDeviceId || select.options[0].value);
+    sessionStorage.setItem('sp_selected_device_id', select.value);
+    select.onchange = ()=> sessionStorage.setItem('sp_selected_device_id', select.value);
+  }catch(e){}
+}
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  initSpotifyPlayer();
+};
+
+async function initSpotifyPlayer(){
+  const token = await getValidAccessToken();
+  if(!token) return;
+  spotifyPlayer = new Spotify.Player({
+    name: 'Nocturne - Jeu de soirée',
+    getOAuthToken: cb => { getValidAccessToken().then(t => cb(t)); },
+    volume: 0.85
+  });
+  spotifyPlayer.addListener('ready', ({device_id}) => {
+    spotifyDeviceId = device_id;
+    spotifyPlayerReady = true;
+    updateSpotifyUI();
+    loadSpotifyDevices();
+  });
+  spotifyPlayer.addListener('not_ready', () => { spotifyPlayerReady = false; updateSpotifyUI(); });
+  spotifyPlayer.addListener('authentication_error', ({message}) => {
+    const statusEl = document.getElementById('spotify-status');
+    if(statusEl){ statusEl.textContent = 'Erreur de connexion, reconnecte-toi.'; statusEl.className='status err'; }
+  });
+  spotifyPlayer.addListener('account_error', ({message}) => {
+    const statusEl = document.getElementById('spotify-status');
+    if(statusEl){ statusEl.textContent = 'Compte Spotify Premium requis pour la lecture.'; statusEl.className='status err'; }
+  });
+  spotifyPlayer.connect();
+}
+
+function normalizeStr(s){
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim();
+}
+
+async function searchSpotifyTrack(token, title, artist){
+  const primaryArtist = artist.split(',')[0].split(' feat')[0].split(' & ')[0].trim();
+  try{
+    const fieldQuery = encodeURIComponent(`track:"${title}" artist:"${primaryArtist}"`);
+    let res = await fetch(`https://api.spotify.com/v1/search?q=${fieldQuery}&type=track&limit=5`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    let data = await res.json();
+    let items = (data.tracks && data.tracks.items) || [];
+    if(items.length === 0){
+      const looseQuery = encodeURIComponent(`${title} ${primaryArtist}`);
+      res = await fetch(`https://api.spotify.com/v1/search?q=${looseQuery}&type=track&limit=5`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      data = await res.json();
+      items = (data.tracks && data.tracks.items) || [];
+    }
+    if(items.length === 0) return null;
+    const normTitle = normalizeStr(title);
+    const normArtist = normalizeStr(primaryArtist);
+    let best = items[0];
+    let bestScore = -1;
+    for(const it of items){
+      const itTitle = normalizeStr(it.name);
+      const itArtists = it.artists.map(a=>normalizeStr(a.name));
+      let score = 0;
+      if(itTitle === normTitle) score += 3;
+      else if(itTitle.includes(normTitle) || normTitle.includes(itTitle)) score += 1.5;
+      if(itArtists.some(a=> a===normArtist)) score += 3;
+      else if(itArtists.some(a=> a.includes(normArtist) || normArtist.includes(a))) score += 1.5;
+      if(score > bestScore){ bestScore = score; best = it; }
+    }
+    return best;
+  }catch(e){
+    return null;
+  }
+}
+
+async function attemptPlayOnDevice(token, deviceId, trackUri){
+  const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uris: [trackUri] })
+  });
+  return res;
+}
+
+async function playTrackOnSpotify(title, artist){
+  const token = await getValidAccessToken();
+  if(!token){
+    alert("Connecte d'abord ton compte Spotify depuis l'écran d'accueil.");
+    return;
+  }
+  let targetDevice = sessionStorage.getItem('sp_selected_device_id') || spotifyDeviceId;
+  if(!targetDevice){
+    alert("Aucun appareil Spotify disponible. Ouvre l'appli Spotify sur ton téléphone, puis retourne sur l'écran d'accueil et clique sur 'Rafraîchir les appareils'.");
+    return;
+  }
+  try{
+    const track = await searchSpotifyTrack(token, title, artist);
+    if(!track){
+      alert("Morceau introuvable sur Spotify.");
+      return;
+    }
+    let playRes = await attemptPlayOnDevice(token, targetDevice, track.uri);
+
+    if(!playRes.ok && playRes.status !== 204){
+      // L'appareil ciblé n'est probablement plus actif (mise en veille côté téléphone) :
+      // on retente automatiquement, en repliant sur le lecteur intégré à cette page si besoin.
+      await loadSpotifyDevices();
+      const fallbackDevice = spotifyDeviceId || sessionStorage.getItem('sp_selected_device_id');
+      if(fallbackDevice && fallbackDevice !== targetDevice){
+        targetDevice = fallbackDevice;
+        sessionStorage.setItem('sp_selected_device_id', targetDevice);
+        const select = document.getElementById('spotify-device-select');
+        if(select) select.value = targetDevice;
+        playRes = await attemptPlayOnDevice(token, targetDevice, track.uri);
+      }
+    }
+
+    if(!playRes.ok && playRes.status !== 204){
+      alert("Impossible de lancer la lecture. Ouvre l'appli Spotify sur ton téléphone quelques secondes pour la réveiller, puis réessaie. Pour éviter ce problème toute la soirée, utilise un appareil dédié à la musique (vieux téléphone, laptop, enceinte connectée) que tu ne mets pas en veille.");
+    }
+  }catch(e){
+    alert("Erreur pendant la lecture. Vérifie ta connexion Spotify.");
+  }
+}
+
+async function pauseSpotify(){
+  const token = await getValidAccessToken();
+  const targetDevice = sessionStorage.getItem('sp_selected_device_id') || spotifyDeviceId;
+  if(!token || !targetDevice) return;
+  try{
+    await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${targetDevice}`, {
+      method:'PUT',
+      headers: {'Authorization':'Bearer ' + token}
+    });
+  }catch(e){}
+}
+
+(async function initSpotifyAuth(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  if(code){
+    await exchangeCodeForToken(code);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  updateSpotifyUI();
+})();
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const btn = document.getElementById('spotify-connect-btn');
+  if(btn) btn.addEventListener('click', spotifyLogin);
+  const refreshBtn = document.getElementById('spotify-refresh-devices-btn');
+  if(refreshBtn) refreshBtn.addEventListener('click', loadSpotifyDevices);
+});
+
+const ROULETTE_RED = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+// Ordre réel des cases sur une roue de roulette européenne (37 cases, 0 inclus)
+const ROULETTE_WHEEL_ORDER = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+
+function rouletteColor(n){
+  if(n === 0) return '#16a34a';
+  return ROULETTE_RED.has(n) ? '#dc2626' : '#161616';
+}
+
+function buildRouletteGradient(){
+  const segDeg = 360 / ROULETTE_WHEEL_ORDER.length;
+  const stops = ROULETTE_WHEEL_ORDER.map((num, i)=>{
+    const start = (i*segDeg).toFixed(3);
+    const end = ((i+1)*segDeg).toFixed(3);
+    return `${rouletteColor(num)} ${start}deg ${end}deg`;
+  });
+  return `conic-gradient(${stops.join(', ')})`;
+}
+let undercoverState = null;
+
+function renderNextSlide(){
+  if(currentSlideType === 'blindtest' || currentSlideType === 'blindtestMainstream'){ pauseSpotify(); }
+  turnCount++;
+  progressTxt.textContent = `${t('tourLabel')} ${turnCount}`;
+  nextBtn.textContent = t('nextBtn');
+  document.getElementById('game-btnrow').style.display = '';
+
+  if(pendingSpecialSlides.length > 0){
+    renderSpecialSlide(pendingSpecialSlides.shift());
+    return;
+  }
+
+  if(currentMode === 'pogo'){
+    scheduleSpecialsIfDue();
+    if(pendingSpecialSlides.length > 0){
+      renderSpecialSlide(pendingSpecialSlides.shift());
+      return;
+    }
+    const type = nextCategory();
+    currentSlideType = type;
+    if(type === 'blindtest'){ stopAmbientMusic(); } else { startAmbientMusic(); }
+    renderCategorySlide(type);
+  }
+  else if(currentMode === 'blindtest'){
+    currentSlideType = 'blindtestMainstream';
+    stopAmbientMusic();
+    renderBlindtestMainstreamSlide();
+  }
+  else if(currentMode === 'culture'){
+    currentSlideType = 'culture';
+    startAmbientMusic();
+    renderCategorySlide('culture');
+  }
+  else if(currentMode === 'roulette'){
+    currentSlideType = 'roulette';
+    startAmbientMusic();
+    renderRouletteSlide(players[Math.floor(Math.random()*players.length)], false);
+  }
+  else if(currentMode === 'undercover'){
+    currentSlideType = 'undercover-done';
+    gameCard.innerHTML = `
+      <div class="special-card">
+        <div class="special-emoji">🕵️</div>
+        <div class="content-title">Partie terminée</div>
+        <div class="content-sub">Relance une nouvelle partie Undercover ou change de mode.</div>
+      </div>`;
+    nextBtn.textContent = '🔁 Relancer une partie';
+  }
+}
+
+function renderCategorySlide(type){
+  if(type==='blindtest'){
+    const song = drawFrom('blindtest');
+    const enc = song.enc || Math.floor(Math.random()*5)+1;
+    gameCard.innerHTML = `
+      <span class="badge blindtest">🎵 ${t('badgeBlindtest')}</span>
+      <div class="content-title">${t('blindtestTitle')}</div>
+      <div class="content-sub">${t('blindtestSub')}</div>
+      <div class="gorgees-tag">🍻 ${enc} enculade${enc>1?'s':''} ${t('toDistribute')}</div>
+      <button class="spotify-btn" id="play-song-btn">▶ ${t('playSongBtn')}</button>
+      <div class="answer-box artist-reveal" id="reveal-box">
+        <div class="artist-bg" id="artist-bg"></div>
+        <div class="artist-overlay"></div>
+        <div class="answer-content">
+          <div class="label">${t('answerLabel')}</div>
+          <div style="font-size:1.2rem; font-weight:700;">${song.t}</div>
+          <div style="color:var(--text-dim);">${song.a} — ${song.y}</div>
+        </div>
+      </div>
+      <button class="secondary" id="reveal-song-btn">${t('revealBtn')}</button>
+    `;
+    document.getElementById('play-song-btn').addEventListener('click', ()=>{
+      if(spotifyPlayer && typeof spotifyPlayer.activateElement === 'function'){
+        spotifyPlayer.activateElement();
+      }
+      playTrackOnSpotify(song.t, song.a);
+    });
+    document.getElementById('reveal-song-btn').addEventListener('click', ()=>{
+      document.getElementById('reveal-box').classList.add('show');
+      loadArtistPhoto(song.a);
+    });
+  }
+  else if(type==='culture'){
+    const item = drawFrom('culture');
+    const enc = item.enc || Math.floor(Math.random()*5)+1;
+    gameCard.innerHTML = `
+      <span class="badge culture">🧠 ${t('badgeCulture')} — ${item.cat}</span>
+      <div class="content-title">${item.q}</div>
+      <div class="content-sub">${t('cultureSub')}</div>
+      <div class="answer-box" id="reveal-box-culture">
+        <div class="label">${t('correctAnswerLabel')}</div>
+        <div style="font-size:1.15rem; font-weight:700;">${item.opts[item.correct]}</div>
+      </div>
+      <div class="gorgees-tag" id="wrong-tag" style="display:none;">🍻 ${enc} enculade${enc>1?'s':''} ${t('forWrong')}</div>
+      <button class="secondary" id="reveal-culture-btn">${t('revealBtn')}</button>
+    `;
+    document.getElementById('reveal-culture-btn').addEventListener('click', ()=>{
+      document.getElementById('reveal-box-culture').classList.add('show');
+      document.getElementById('wrong-tag').style.display = 'inline-flex';
+    });
+  }
+  else if(type==='qui'){
+    const q = drawFrom('qui');
+    const enc = q.enc || 3;
+    gameCard.innerHTML = `
+      <span class="badge quidenous">👀 ${t('badgeQui')}</span>
+      <div class="content-title">${q.text}</div>
+      <div class="content-sub">${t('quiSub')}</div>
+      <div class="gorgees-tag">🍻 ${enc} enculade${enc>1?'s':''} pour la personne la plus désignée</div>
+    `;
+  }
+  else if(type==='action'){
+    const a = drawFrom('action');
+    const player = players[Math.floor(Math.random()*players.length)];
+    const encTag = a.enc ? `<div class="gorgees-tag">🍻 ${a.enc} enculade${a.enc>1?'s':''}</div>` : '';
+    gameCard.innerHTML = `
+      <span class="badge action">🎯 ${t('badgeAction')}</span>
+      <div class="player-picked">
+        <div style="color:var(--text-dim); font-size:0.85rem;">${t('actionPlayerLabel')}</div>
+        <div class="who">${player}</div>
+      </div>
+      <div class="content-title" style="font-size:1.25rem;">${a.text}</div>
+      ${encTag}
+    `;
+  }
+}
+
+function renderBlindtestMainstreamSlide(){
+  const song = drawFrom('blindtestMainstream');
+  gameCard.innerHTML = `
+    <span class="badge blindtest">🎵 BLIND TEST</span>
+    <div class="content-title">Devine le morceau !</div>
+    <div class="content-sub">Celui ou celle qui trouve l'<b>artiste</b> distribue 1 enculade. Celui ou celle qui trouve le <b>titre</b> distribue 1 enculade (ça peut être la même personne, ou deux différentes).</div>
+    <button class="spotify-btn" id="play-song-btn">▶ Lancer le morceau</button>
+    <div class="answer-box artist-reveal" id="reveal-box">
+      <div class="artist-bg" id="artist-bg"></div>
+      <div class="artist-overlay"></div>
+      <div class="answer-content">
+        <div class="label">Réponse</div>
+        <div style="font-size:1.2rem; font-weight:700;">${song.t}</div>
+        <div style="color:var(--text-dim);">${song.a} — ${song.y}</div>
+      </div>
+    </div>
+    <button class="secondary" id="reveal-song-btn">Révéler la réponse</button>
+  `;
+  document.getElementById('play-song-btn').addEventListener('click', ()=>{
+    if(spotifyPlayer && typeof spotifyPlayer.activateElement === 'function'){
+      spotifyPlayer.activateElement();
+    }
+    playTrackOnSpotify(song.t, song.a);
+  });
+  document.getElementById('reveal-song-btn').addEventListener('click', ()=>{
+    document.getElementById('reveal-box').classList.add('show');
+    loadArtistPhoto(song.a);
+  });
+}
+
+/* ---- Slides spéciales (Pogo) ---- */
+function renderSpecialSlide(special){
+  startAmbientMusic();
+  if(special.type === 'pyramide') renderPyramideSlide(special.mode);
+  else if(special.type === 'autoroute') renderAutorouteSlide(special.player);
+  else if(special.type === 'roulette') renderRouletteSlide(special.player, true);
+  else if(special.type === 'undercover-start') initUndercoverGame(true);
+}
+
+function renderPyramideSlide(mode){
+  currentSlideType = 'pyramide';
+  const isIndiv = mode === 'individuel';
+  gameCard.innerHTML = `
+    <div class="special-card">
+      <div class="special-emoji">🔺</div>
+      <div class="content-title">PYRAMIDE ${isIndiv ? 'Individuel' : 'en Équipe'}</div>
+      <div class="content-sub">${isIndiv
+        ? "Il est l'heure de sortir les cartes et de lancer une pyramide, remplissez vos verres."
+        : "Formez des équipes de 2 à 3, sortez les cartes et lancez une pyramide en équipe, remplissez vos verres."}</div>
+    </div>
+  `;
+}
+
+function renderAutorouteSlide(player){
+  currentSlideType = 'autoroute';
+  gameCard.innerHTML = `
+    <div class="special-card">
+      <div class="special-emoji">🛣️</div>
+      <div class="content-title">Autoroute pour ${player}</div>
+      <div class="content-sub">Il est l'heure de sortir les cartes.</div>
+    </div>
+  `;
+}
+
+/* ---- Roulette ---- */
+function renderRouletteSlide(player, isPogo){
+  currentSlideType = 'roulette';
+  let wager = 2;
+  gameCard.innerHTML = `
+    <span class="badge action">🎰 ROULETTE</span>
+    <div class="content-title">Au tour de ${player}</div>
+    <div class="content-sub">Choisis ta mise, puis clique directement sur ton pari pour lancer la roulette.</div>
+    <div class="wager-row">
+      <button id="wager-minus" type="button">−</button>
+      <span class="wager-value" id="wager-value">2</span>
+      <button id="wager-plus" type="button">+</button>
+    </div>
+    <p class="content-sub" style="text-align:center; margin-top:0;">enculades misées</p>
+    <div class="roulette-wheel-wrap">
+      <div class="roulette-pointer"></div>
+      <div class="roulette-wheel" id="roulette-wheel" style="background:${buildRouletteGradient()};"></div>
+      <div class="roulette-hub" id="roulette-hub">?</div>
+    </div>
+    <div class="bet-grid">
+      <button class="bet-btn red" data-bet="red">🔴 Rouge</button>
+      <button class="bet-btn black" data-bet="black">⚫ Noir</button>
+      <button class="bet-btn parity" data-bet="pair">Pair</button>
+      <button class="bet-btn parity" data-bet="impair">Impair</button>
+      <button class="bet-btn green" data-bet="green">🟢 Vert (0)</button>
+    </div>
+    <div class="answer-box" id="roulette-result"></div>
+  `;
+  document.getElementById('game-btnrow').style.display = 'none';
+
+  document.getElementById('wager-minus').addEventListener('click', ()=>{
+    wager = Math.max(1, wager-1);
+    document.getElementById('wager-value').textContent = wager;
+  });
+  document.getElementById('wager-plus').addEventListener('click', ()=>{
+    wager = Math.min(5, wager+1);
+    document.getElementById('wager-value').textContent = wager;
+  });
+  document.querySelectorAll('.bet-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.bet-btn').forEach(b=>b.disabled = true);
+      document.getElementById('wager-minus').disabled = true;
+      document.getElementById('wager-plus').disabled = true;
+      spinRoulette(btn.getAttribute('data-bet'), wager, player);
+    });
+  });
+}
+
+function spinRoulette(bet, wager, player){
+  const wheel = document.getElementById('roulette-wheel');
+  const hub = document.getElementById('roulette-hub');
+  const result = Math.floor(Math.random()*37);
+  const segDeg = 360 / ROULETTE_WHEEL_ORDER.length;
+  const idx = ROULETTE_WHEEL_ORDER.indexOf(result);
+  const pocketCenter = idx*segDeg + segDeg/2;
+  const jitter = (Math.random()*segDeg*0.5) - segDeg*0.25;
+  const spins = 6;
+  const targetRotation = spins*360 - pocketCenter + jitter;
+  wheel.style.transform = `rotate(${targetRotation}deg)`;
+  hub.textContent = '🎲';
+
+  setTimeout(()=>{
+    const isGreen = result === 0;
+    const isRed = ROULETTE_RED.has(result);
+    const color = isGreen ? 'vert' : (isRed ? 'rouge' : 'noir');
+    const isOdd = result % 2 === 1;
+
+    let won = false;
+    if(bet === 'green') won = isGreen;
+    else if(bet === 'red') won = isRed;
+    else if(bet === 'black') won = (!isGreen && !isRed);
+    else if(bet === 'pair') won = (!isGreen && !isOdd);
+    else if(bet === 'impair') won = (!isGreen && isOdd);
+
+    hub.textContent = result;
+
+    let outcomeHtml;
+    if(bet === 'green'){
+      outcomeHtml = won ? `🎉 0 sorti ! Tout le monde boit cul-sec !` : `Perdu — ${player} boit 5 enculades.`;
+    } else {
+      outcomeHtml = won
+        ? `🎉 Gagné ! ${player} distribue ${wager} enculade${wager>1?'s':''} à la personne de son choix.`
+        : `Perdu — ${player} boit ${wager*2} enculades.`;
+    }
+
+    const resultBox = document.getElementById('roulette-result');
+    resultBox.innerHTML = `
+      <div class="label">Résultat : ${result} (${color})</div>
+      <div style="font-size:1.1rem; font-weight:700; margin-top:6px;">${outcomeHtml}</div>
+    `;
+    resultBox.classList.add('show');
+    document.getElementById('game-btnrow').style.display = '';
+  }, 3700);
+}
+
+/* ---- Undercover ---- */
+function initUndercoverGame(returnToPogo){
+  const pair = undercoverPairsData[Math.floor(Math.random()*undercoverPairsData.length)];
+  const order = shuffle(players);
+  const numUndercover = players.length >= 8 ? 2 : 1;
+  const ucIndexes = new Set();
+  while(ucIndexes.size < numUndercover && ucIndexes.size < order.length){
+    ucIndexes.add(Math.floor(Math.random()*order.length));
+  }
+  undercoverState = {
+    step: 'reveal', playerIndex: 0, playerOrder: order,
+    underCoverIndexes: ucIndexes, civilWord: pair.civil, undercoverWord: pair.undercover,
+    returnToPogo
+  };
+  currentSlideType = 'undercover-reveal';
+  renderUndercoverStep();
+}
+
+function renderUndercoverStep(){
+  const st = undercoverState;
+
+  if(st.step === 'reveal'){
+    document.getElementById('game-btnrow').style.display = 'none';
+    const player = st.playerOrder[st.playerIndex];
+    gameCard.innerHTML = `
+      <span class="badge quidenous">🕵️ UNDERCOVER</span>
+      <div class="content-title">Passe le téléphone à ${player}</div>
+      <div class="content-sub">Personne d'autre ne doit voir l'écran.</div>
+      <div class="uc-word-box" id="uc-box">
+        <div>👆 Touche pour voir ton mot</div>
+        <div class="word" id="uc-word" style="display:none;"></div>
+      </div>
+      <button class="primary" id="uc-next-player-btn" style="display:none;">Mot vu, joueur suivant</button>
+    `;
+    document.getElementById('uc-box').addEventListener('click', ()=>{
+      const isUndercover = st.underCoverIndexes.has(st.playerIndex);
+      const wordEl = document.getElementById('uc-word');
+      wordEl.textContent = isUndercover ? st.undercoverWord : st.civilWord;
+      wordEl.style.display = 'block';
+      document.getElementById('uc-next-player-btn').style.display = 'block';
+      document.getElementById('uc-box').style.pointerEvents = 'none';
+    });
+    document.getElementById('uc-next-player-btn').addEventListener('click', ()=>{
+      st.playerIndex++;
+      if(st.playerIndex >= st.playerOrder.length){ st.step = 'discuss1'; }
+      renderUndercoverStep();
+    });
+    return;
+  }
+
+  document.getElementById('game-btnrow').style.display = '';
+
+  if(st.step === 'discuss1' || st.step === 'discuss2'){
+    const roundNum = st.step === 'discuss1' ? 1 : 2;
+    gameCard.innerHTML = `
+      <span class="badge quidenous">🕵️ UNDERCOVER</span>
+      <div class="content-title">Tour de description ${roundNum}/2</div>
+      <div class="content-sub">Chacun décrit son mot à l'oral, sans le dire, dans l'ordre de votre choix. Quand tout le monde est passé, continuez.</div>
+    `;
+    nextBtn.textContent = roundNum === 1 ? 'Tour 2 →' : 'Passer au vote →';
+  }
+  else if(st.step === 'vote'){
+    document.getElementById('game-btnrow').style.display = 'none';
+    gameCard.innerHTML = `
+      <span class="badge quidenous">🕵️ UNDERCOVER</span>
+      <div class="content-title">C'est l'heure du vote !</div>
+      <div class="content-sub">Votez à voix haute pour la personne que vous soupçonnez d'être l'Undercover, puis choisissez qui a gagné :</div>
+      <div class="btnrow" style="margin-top:14px;">
+        <button class="primary" id="uc-civils-win-btn" style="margin-top:0;">Undercover démasqué</button>
+      </div>
+      <div class="btnrow" style="margin-top:10px;">
+        <button class="secondary" id="uc-uc-win-btn">Undercover pas démasqué</button>
+      </div>
+    `;
+    document.getElementById('uc-civils-win-btn').addEventListener('click', ()=> resolveUndercover(true));
+    document.getElementById('uc-uc-win-btn').addEventListener('click', ()=> resolveUndercover(false));
+  }
+}
+
+function advanceUndercoverStep(){
+  const st = undercoverState;
+  if(st.step === 'discuss1'){ st.step = 'discuss2'; renderUndercoverStep(); }
+  else if(st.step === 'discuss2'){ st.step = 'vote'; renderUndercoverStep(); }
+}
+
+function resolveUndercover(civilsWon){
+  const st = undercoverState;
+  document.getElementById('game-btnrow').style.display = '';
+  const underCoverNames = st.playerOrder.filter((p,i)=>st.underCoverIndexes.has(i));
+  gameCard.innerHTML = `
+    <span class="badge quidenous">🕵️ UNDERCOVER</span>
+    <div class="content-title">${civilsWon ? 'Les civils gagnent !' : "Les Undercover s'en sortent !"}</div>
+    <div class="content-sub">Undercover : ${underCoverNames.join(', ')}<br>Mot civil : <b>${st.civilWord}</b> — Mot Undercover : <b>${st.undercoverWord}</b></div>
+    <div class="gorgees-tag">🍻 ${civilsWon ? 'Les Undercover boivent 7 enculades' : 'Les civils boivent 7 enculades'}</div>
+  `;
+  if(st.returnToPogo){
+    currentSlideType = null;
+    nextBtn.textContent = t('nextBtn');
+  } else {
+    currentSlideType = 'undercover-done';
+    nextBtn.textContent = '🔁 Relancer une partie';
+  }
+}
+
+function handleNextClick(){
+  if(currentSlideType && currentSlideType.startsWith('undercover') && currentSlideType !== 'undercover-done'){
+    advanceUndercoverStep();
+  } else if(currentSlideType === 'undercover-done'){
+    initUndercoverGame(false);
+  } else {
+    renderNextSlide();
+  }
+}
+
+nextBtn.addEventListener('click', handleNextClick);
+endGameBtn.addEventListener('click', ()=>{
+  stopAmbientMusic();
+  pauseSpotify();
+  showScreen('screen-end');
+});
+document.getElementById('restart-btn').addEventListener('click', ()=>{
+  showScreen('screen-setup');
+});
+
+/* ============================= I18N ============================= */
+const I18N = {
+  fr: {
+    settingsTitle:'Paramètres', tabLangue:'Langue', tabSon:'Son', tabJoueurs:'Joueurs',
+    langueNote:"L'interface se traduit dans la langue choisie. Le contenu du jeu (chansons, questions, actions) reste en français.",
+    ambientVolumeLabel:"Volume musique d'ambiance", muteBtn:'Couper la musique de fond',
+    spotifyVolumeLabel:'Volume Spotify (appareil connecté)',
+    ambientNote:"La musique d'ambiance se coupe automatiquement pendant le Blind Test et reprend juste après.",
+    adminLockedNote:'Zone réservée aux créateurs et modérateurs du jeu.', unlockBtn:'Déverrouiller', wrongCode:'Code incorrect.',
+    setupTitle:'Qui joue ce soir ?', setupSubtitle:'Ajoute entre 3 et 15 joueurs.', playerPlaceholder:'Prénom du joueur',
+    spotifyConnectBtn:'🎧 Connecter mon compte Spotify', spotifyStatusDefault:'Nécessaire pour lancer les musiques du Blind Test (compte Premium requis)',
+    refreshDevicesBtn:'🔄 Rafraîchir les appareils', startBtn:'Lancer la soirée 🔥',
+    rulesIntro:'4 catégories mélangées aléatoirement :',
+    rulesBlindtest:'— rap français 2000–2026, le premier qui trouve distribue des enculades.',
+    rulesCulture:'— sport, histoire, géo, sciences, actu, art...',
+    rulesQui:'— les autres désignent la bonne personne.',
+    rulesAction:"— un joueur au hasard doit relever le défi (ou boire à la place s'il ne le sent pas).",
+    endGameBtn:'Terminer la partie', nextBtn:'Suivant →',
+    endTitle:'Soirée terminée 🥳', endSub:"Merci d'avoir joué à Nocturne. Buvez de l'eau, mangez un truc, et faites rentrer tout le monde en sécurité.", restartBtn:'Nouvelle partie',
+    playersSuffix:'joueurs', tourLabel:'Tour',
+    badgeBlindtest:'BLIND TEST', blindtestTitle:'Devine le morceau !',
+    blindtestSub:"Le premier ou la première qui trouve le titre et/ou l'artiste distribue les enculades ci-dessous.",
+    toDistribute:'à distribuer', playSongBtn:'Lancer le morceau', answerLabel:'Réponse', revealBtn:'Révéler la réponse',
+    badgeCulture:'CULTURE GÉNÉRALE', cultureSub:'Chacun annonce sa réponse à voix haute, puis on révèle.',
+    correctAnswerLabel:'Bonne réponse', forWrong:'pour ceux qui se sont trompés',
+    badgeQui:'QUI DE NOUS', quiSub:'Tout le monde pointe en même temps la personne qui correspond le plus.',
+    badgeAction:'ACTION', actionPlayerLabel:'Le joueur ou la joueuse désigné(e) est',
+    actionPassNote:"Pas envie ? Passe et prends le nombre d'enculades de ton choix (max 5) à la place.",
+    actionPassPrefix:'Pas envie ? Passe et prends', actionPassSuffixCustom:'à la place.'
+  },
+  en: {
+    settingsTitle:'Settings', tabLangue:'Language', tabSon:'Sound', tabJoueurs:'Players',
+    langueNote:'The interface is translated into the chosen language. The game content (songs, questions, dares) stays in French.',
+    ambientVolumeLabel:'Ambient music volume', muteBtn:'Mute background music',
+    spotifyVolumeLabel:'Spotify volume (connected device)',
+    ambientNote:'The ambient music automatically pauses during Blind Test and resumes right after.',
+    adminLockedNote:'Area reserved for the game creators and moderators.', unlockBtn:'Unlock', wrongCode:'Incorrect code.',
+    setupTitle:'Who\'s playing tonight?', setupSubtitle:'Add between 3 and 15 players.', playerPlaceholder:"Player's name",
+    spotifyConnectBtn:'🎧 Connect my Spotify account', spotifyStatusDefault:'Needed to play Blind Test songs (Premium account required)',
+    refreshDevicesBtn:'🔄 Refresh devices', startBtn:'Start the party 🔥',
+    rulesIntro:'4 categories mixed randomly:',
+    rulesBlindtest:'— French rap 2000–2026, first to guess hands out drinks.',
+    rulesCulture:'— sport, history, geography, science, news, art...',
+    rulesQui:'— everyone else points at the matching person.',
+    rulesAction:"— a random player must take on the dare (or drink instead if they don't want to).",
+    endGameBtn:'End the game', nextBtn:'Next →',
+    endTitle:'Party over 🥳', endSub:'Thanks for playing Nocturne. Drink some water, eat something, and get everyone home safe.', restartBtn:'New game',
+    playersSuffix:'players', tourLabel:'Round',
+    badgeBlindtest:'BLIND TEST', blindtestTitle:'Guess the track!',
+    blindtestSub:'First to guess the title and/or artist hands out the drinks below.',
+    toDistribute:'to hand out', playSongBtn:'Play the track', answerLabel:'Answer', revealBtn:'Reveal the answer',
+    badgeCulture:'GENERAL KNOWLEDGE', cultureSub:'Everyone says their answer out loud, then reveal.',
+    correctAnswerLabel:'Correct answer', forWrong:'for those who got it wrong',
+    badgeQui:'WHO OF US', quiSub:'Everyone points at the same time to the person who fits best.',
+    badgeAction:'DARE', actionPlayerLabel:'The chosen player is',
+    actionPassNote:"Not feeling it? Skip and take as many drinks as you want (up to 5) instead.",
+    actionPassPrefix:'Not feeling it? Skip and take', actionPassSuffixCustom:'instead.'
+  },
+  es: {
+    settingsTitle:'Ajustes', tabLangue:'Idioma', tabSon:'Sonido', tabJoueurs:'Jugadores',
+    langueNote:'La interfaz se traduce al idioma elegido. El contenido del juego (canciones, preguntas, retos) sigue en francés.',
+    ambientVolumeLabel:'Volumen música ambiente', muteBtn:'Silenciar música de fondo',
+    spotifyVolumeLabel:'Volumen de Spotify (dispositivo conectado)',
+    ambientNote:'La música ambiente se pausa automáticamente durante el Blind Test y vuelve justo después.',
+    adminLockedNote:'Zona reservada a los creadores y moderadores del juego.', unlockBtn:'Desbloquear', wrongCode:'Código incorrecto.',
+    setupTitle:'¿Quién juega esta noche?', setupSubtitle:'Añade entre 3 y 15 jugadores.', playerPlaceholder:'Nombre del jugador',
+    spotifyConnectBtn:'🎧 Conectar mi cuenta de Spotify', spotifyStatusDefault:'Necesario para reproducir las canciones del Blind Test (cuenta Premium requerida)',
+    refreshDevicesBtn:'🔄 Actualizar dispositivos', startBtn:'Empezar la fiesta 🔥',
+    rulesIntro:'4 categorías mezcladas al azar:',
+    rulesBlindtest:'— rap francés 2000–2026, el primero en acertar reparte tragos.',
+    rulesCulture:'— deporte, historia, geografía, ciencia, actualidad, arte...',
+    rulesQui:'— los demás señalan a la persona que más encaja.',
+    rulesAction:'— un jugador al azar debe cumplir el reto (o beber en su lugar si no le apetece).',
+    endGameBtn:'Terminar la partida', nextBtn:'Siguiente →',
+    endTitle:'Fiesta terminada 🥳', endSub:'Gracias por jugar a Nocturne. Bebed agua, comed algo, y que todos vuelvan a casa seguros.', restartBtn:'Nueva partida',
+    playersSuffix:'jugadores', tourLabel:'Ronda',
+    badgeBlindtest:'BLIND TEST', blindtestTitle:'¡Adivina la canción!',
+    blindtestSub:'El primero en adivinar el título y/o el artista reparte los tragos de abajo.',
+    toDistribute:'a repartir', playSongBtn:'Reproducir canción', answerLabel:'Respuesta', revealBtn:'Revelar la respuesta',
+    badgeCulture:'CULTURA GENERAL', cultureSub:'Cada uno dice su respuesta en voz alta, luego se revela.',
+    correctAnswerLabel:'Respuesta correcta', forWrong:'para los que fallaron',
+    badgeQui:'QUIÉN DE NOSOTROS', quiSub:'Todos señalan a la vez a la persona que más encaja.',
+    badgeAction:'RETO', actionPlayerLabel:'El jugador elegido es',
+    actionPassNote:'¿No te apetece? Pasa y toma el número de tragos que quieras (máx 5) en su lugar.',
+    actionPassPrefix:'¿No te apetece? Pasa y toma', actionPassSuffixCustom:'en su lugar.'
+  },
+  it: {
+    settingsTitle:'Impostazioni', tabLangue:'Lingua', tabSon:'Audio', tabJoueurs:'Giocatori',
+    langueNote:"L'interfaccia si traduce nella lingua scelta. Il contenuto del gioco (canzoni, domande, sfide) resta in francese.",
+    ambientVolumeLabel:"Volume musica d'ambiente", muteBtn:'Disattiva la musica di sottofondo',
+    spotifyVolumeLabel:'Volume Spotify (dispositivo connesso)',
+    ambientNote:'La musica di sottofondo si interrompe automaticamente durante il Blind Test e riprende subito dopo.',
+    adminLockedNote:'Area riservata ai creatori e ai moderatori del gioco.', unlockBtn:'Sblocca', wrongCode:'Codice errato.',
+    setupTitle:'Chi gioca stasera?', setupSubtitle:'Aggiungi da 3 a 15 giocatori.', playerPlaceholder:'Nome del giocatore',
+    spotifyConnectBtn:'🎧 Collega il mio account Spotify', spotifyStatusDefault:'Necessario per riprodurre i brani del Blind Test (account Premium richiesto)',
+    refreshDevicesBtn:'🔄 Aggiorna dispositivi', startBtn:'Inizia la serata 🔥',
+    rulesIntro:'4 categorie mescolate a caso:',
+    rulesBlindtest:'— rap francese 2000–2026, il primo che indovina distribuisce i sorsi.',
+    rulesCulture:'— sport, storia, geografia, scienza, attualità, arte...',
+    rulesQui:'— gli altri indicano la persona giusta.',
+    rulesAction:'— un giocatore a caso deve fare la sfida (o bere al posto suo se non se la sente).',
+    endGameBtn:'Termina la partita', nextBtn:'Avanti →',
+    endTitle:'Serata finita 🥳', endSub:"Grazie per aver giocato a Nocturne. Bevete acqua, mangiate qualcosa, e riportate tutti a casa sani e salvi.", restartBtn:'Nuova partita',
+    playersSuffix:'giocatori', tourLabel:'Turno',
+    badgeBlindtest:'BLIND TEST', blindtestTitle:'Indovina il brano!',
+    blindtestSub:"Il primo che indovina il titolo e/o l'artista distribuisce i sorsi qui sotto.",
+    toDistribute:'da distribuire', playSongBtn:'Riproduci il brano', answerLabel:'Risposta', revealBtn:'Rivela la risposta',
+    badgeCulture:'CULTURA GENERALE', cultureSub:'Ognuno dice la sua risposta ad alta voce, poi si rivela.',
+    correctAnswerLabel:'Risposta corretta', forWrong:'per chi ha sbagliato',
+    badgeQui:'CHI DI NOI', quiSub:'Tutti indicano contemporaneamente la persona più adatta.',
+    badgeAction:'SFIDA', actionPlayerLabel:'Il giocatore scelto è',
+    actionPassNote:"Non ti va? Passa e prendi il numero di sorsi che vuoi (max 5) al posto suo.",
+    actionPassPrefix:'Non ti va? Passa e prendi', actionPassSuffixCustom:'al posto suo.'
+  }
+};
+
+let currentLang = 'fr';
+
+function t(key){
+  return (I18N[currentLang] && I18N[currentLang][key]) || I18N.fr[key] || key;
+}
+
+function applyTranslations(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', t(key));
+  });
+  document.querySelectorAll('.lang-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+  });
+  renderPlayers();
+  progressTxt.textContent = `${t('tourLabel')} ${turnCount || 1}`;
+  updateSpotifyUI();
+}
+
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('nocturne_lang', lang);
+  applyTranslations();
+}
+
+(function initLang(){
+  const saved = localStorage.getItem('nocturne_lang');
+  if(saved && I18N[saved]) currentLang = saved;
+})();
+applyTranslations();
+
+/* ============================= AMBIENT BACKGROUND MUSIC ============================= */
+let audioCtx = null;
+let ambientNodes = [];
+let ambientGain = null;
+let ambientPlaying = false;
+let ambientMuted = false;
+let ambientVolume = 0.35;
+
+function ensureAudioCtx(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    ambientGain = audioCtx.createGain();
+    ambientGain.gain.value = ambientMuted ? 0 : ambientVolume;
+    ambientGain.connect(audioCtx.destination);
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function startAmbientMusic(){
+  ensureAudioCtx();
+  if(ambientPlaying) return;
+  ambientPlaying = true;
+  // Progression pop classique et lumineuse : Do - Sol - Lam - Fa (I - V - vi - IV)
+  const chordFreqs = [
+    [261.63, 329.63, 392.00],  // Do majeur
+    [196.00, 246.94, 293.66],  // Sol majeur
+    [220.00, 261.63, 329.63],  // La mineur
+    [174.61, 220.00, 261.63]   // Fa majeur
+  ];
+  let chordIndex = 0;
+
+  function playChord(){
+    if(!ambientPlaying) return;
+    const now = audioCtx.currentTime;
+    chordFreqs[chordIndex % chordFreqs.length].forEach((freq, idx)=>{
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = idx === 0 ? 'triangle' : 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.11, now + 0.4);
+      g.gain.linearRampToValueAtTime(0.07, now + 1.6);
+      g.gain.linearRampToValueAtTime(0, now + 2.9);
+      osc.connect(g);
+      g.connect(ambientGain);
+      osc.start(now);
+      osc.stop(now + 3.0);
+    });
+    chordIndex++;
+    ambientNodes.push(setTimeout(playChord, 2800));
+  }
+  playChord();
+}
+
+function stopAmbientMusic(){
+  ambientPlaying = false;
+  ambientNodes.forEach(id=>clearTimeout(id));
+  ambientNodes = [];
+}
+
+function setAmbientVolume(v){
+  ambientVolume = v;
+  if(ambientGain) ambientGain.gain.value = ambientMuted ? 0 : ambientVolume;
+}
+
+function toggleAmbientMute(){
+  ambientMuted = !ambientMuted;
+  if(ambientGain) ambientGain.gain.value = ambientMuted ? 0 : ambientVolume;
+  const btn = document.getElementById('ambient-mute-btn');
+  if(btn){
+    const span = btn.querySelector('[data-i18n]');
+    if(span) span.textContent = ambientMuted ? (currentLang==='en'?'Unmute background music':currentLang==='es'?'Activar música de fondo':currentLang==='it'?'Riattiva la musica di sottofondo':'Réactiver la musique de fond') : t('muteBtn');
+  }
+}
+
+async function setSpotifyDeviceVolume(percent){
+  try{
+    const token = await getValidAccessToken();
+    const targetDevice = sessionStorage.getItem('sp_selected_device_id') || spotifyDeviceId;
+    if(!token || !targetDevice) return;
+    await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${percent}&device_id=${targetDevice}`, {
+      method:'PUT', headers:{ 'Authorization':'Bearer ' + token }
+    });
+  }catch(e){}
+}
+
+/* ============================= SETTINGS MODAL ============================= */
+const settingsModal = document.getElementById('settings-modal');
+document.getElementById('settings-gear-btn').addEventListener('click', ()=>{
+  settingsModal.classList.add('open');
+  applyTranslations();
+});
+document.getElementById('settings-close-btn').addEventListener('click', ()=>{
+  settingsModal.classList.remove('open');
+});
+settingsModal.addEventListener('click', (e)=>{
+  if(e.target === settingsModal) settingsModal.classList.remove('open');
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.getAttribute('data-tab')).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.lang-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> setLang(btn.getAttribute('data-lang')));
+});
+
+document.getElementById('ambient-volume-slider').addEventListener('input', (e)=>{
+  setAmbientVolume(parseInt(e.target.value)/100);
+});
+document.getElementById('ambient-mute-btn').addEventListener('click', toggleAmbientMute);
+document.getElementById('spotify-volume-slider').addEventListener('change', (e)=>{
+  setSpotifyDeviceVolume(parseInt(e.target.value));
+});
+
+document.getElementById('settings-add-player-btn').addEventListener('click', ()=>{
+  addPlayerFrom(document.getElementById('settings-player-input'));
+});
+document.getElementById('settings-player-input').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ e.preventDefault(); addPlayerFrom(document.getElementById('settings-player-input')); }
+});
+
+/* ============================= ADMIN PANEL ============================= */
+const ADMIN_CODE = '080105';
+let adminUnlocked = false;
+let adminCurrentCat = null;
+let adminSearchTerm = '';
+
+document.getElementById('admin-unlock-btn').addEventListener('click', ()=>{
+  const val = document.getElementById('admin-code-input').value.trim();
+  if(val === ADMIN_CODE){
+    adminUnlocked = true;
+    document.getElementById('admin-locked').style.display = 'none';
+    document.getElementById('admin-unlocked').style.display = 'block';
+    document.getElementById('admin-code-error').style.display = 'none';
+  } else {
+    document.getElementById('admin-code-error').style.display = 'block';
+  }
+});
+
+document.getElementById('publish-data-btn').addEventListener('click', ()=>{
+  const payload = { songs: songsData, questions: questionsData, qui: quiData, actions: actionsData };
+  const jsonText = JSON.stringify(payload, null, 2);
+  const textarea = document.getElementById('publish-textarea');
+  textarea.value = jsonText;
+  document.getElementById('publish-output').style.display = 'block';
+  textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+document.getElementById('copy-publish-btn').addEventListener('click', async ()=>{
+  const textarea = document.getElementById('publish-textarea');
+  const btn = document.getElementById('copy-publish-btn');
+  try{
+    await navigator.clipboard.writeText(textarea.value);
+    btn.textContent = '✅ Copié !';
+  }catch(e){
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    try{
+      document.execCommand('copy');
+      btn.textContent = '✅ Copié !';
+    }catch(e2){
+      btn.textContent = '⚠️ Sélectionne le texte et copie-le manuellement';
+    }
+  }
+  setTimeout(()=>{ btn.textContent = '📋 Copier le contenu'; }, 2500);
+});
+
+document.querySelectorAll('.admin-cat-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.admin-cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    adminCurrentCat = btn.getAttribute('data-cat');
+    adminSearchTerm = '';
+    document.getElementById('admin-cat-grid').style.display = 'grid';
+    renderAdminEditor();
+  });
+});
+
+function backToAdminCategories(){
+  adminCurrentCat = null;
+  adminSearchTerm = '';
+  document.querySelectorAll('.admin-cat-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('admin-editor').innerHTML = '';
+}
+
+function getCatArray(cat){
+  if(cat==='blindtest') return songsData;
+  if(cat==='blindtestMainstream') return songsDataMainstream;
+  if(cat==='culture') return questionsData;
+  if(cat==='qui') return quiData;
+  if(cat==='action') return actionsData;
+  if(cat==='undercover') return undercoverPairsData;
+}
+
+function entryPreview(cat, item){
+  if(cat==='blindtest' || cat==='blindtestMainstream') return `${item.t} — ${item.a} (${item.y})`;
+  if(cat==='culture') return item.q;
+  if(cat==='qui') return item.text;
+  if(cat==='action') return item.text;
+  if(cat==='undercover') return `${item.civil} / ${item.undercover}`;
+}
+
+function renderAdminEditor(){
+  const container = document.getElementById('admin-editor');
+  const arr = getCatArray(adminCurrentCat);
+
+  let displayItems = arr.map((item, i) => ({ item, i }));
+  if((adminCurrentCat === 'blindtest' || adminCurrentCat === 'blindtestMainstream') && adminSearchTerm.trim()){
+    const term = adminSearchTerm.trim().toLowerCase();
+    displayItems = displayItems.filter(({item}) => item.a.toLowerCase().includes(term));
+  }
+
+  let html = `<button class="secondary" id="admin-back-btn" style="margin-bottom:14px;">← Retour aux catégories</button>`;
+
+  if(adminCurrentCat === 'blindtest' || adminCurrentCat === 'blindtestMainstream'){
+    html += `
+      <input type="text" id="admin-artist-search" placeholder="🔍 Rechercher un artiste..." value="${adminSearchTerm.replace(/"/g,'&quot;')}"
+        style="width:100%; background:var(--bg2); border:1px solid var(--line); color:var(--text); padding:12px 14px; border-radius:12px; font-family:'Space Grotesk',sans-serif; font-size:0.92rem; margin-bottom:14px;">
+      <p class="content-sub" style="margin-bottom:12px;">${displayItems.length} morceau${displayItems.length>1?'x':''} trouvé${displayItems.length>1?'s':''}</p>
+    `;
+  }
+
+  html += '<div id="admin-entries-list">';
+  displayItems.forEach(({item, i})=>{
+    html += `
+      <div class="admin-entry">
+        <div class="admin-entry-text">${entryPreview(adminCurrentCat, item)}${item.enc ? ` <span style="color:var(--yellow);">🍻 ${item.enc}</span>` : ''}</div>
+        <div class="admin-entry-actions">
+          <button class="edit-btn" data-i="${i}">✏️ Modifier</button>
+          <button class="del-btn" data-i="${i}">🗑️ Supprimer</button>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  html += renderAdminForm(adminCurrentCat, null);
+  container.innerHTML = html;
+
+  document.getElementById('admin-back-btn').addEventListener('click', backToAdminCategories);
+
+  const searchInput = document.getElementById('admin-artist-search');
+  if(searchInput){
+    searchInput.addEventListener('input', (e)=>{
+      adminSearchTerm = e.target.value;
+      renderAdminEditor();
+      const el = document.getElementById('admin-artist-search');
+      if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    });
+  }
+
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.getAttribute('data-i'));
+      arr.splice(i,1);
+      persistData();
+      refillDeck(adminCurrentCat);
+      renderAdminEditor();
+    });
+  });
+  container.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.getAttribute('data-i'));
+      document.getElementById('admin-entries-list').style.display = 'none';
+      const formHolder = document.getElementById('admin-form-holder');
+      formHolder.outerHTML = renderAdminForm(adminCurrentCat, i);
+      wireAdminForm(adminCurrentCat, i);
+    });
+  });
+  wireAdminForm(adminCurrentCat, null);
+}
+
+function renderAdminForm(cat, editIndex){
+  const arr = getCatArray(cat);
+  const editing = editIndex !== null;
+  const item = editing ? arr[editIndex] : null;
+  let fields = '';
+  if(cat==='blindtest' || cat==='blindtestMainstream'){
+    fields = `
+      <label>Titre</label><input type="text" id="af-title" value="${editing?item.t.replace(/"/g,'&quot;'):''}">
+      <label>Artiste</label><input type="text" id="af-artist" value="${editing?item.a.replace(/"/g,'&quot;'):''}">
+      <label>Année</label><input type="text" id="af-year" value="${editing?item.y:''}">
+    `;
+  } else if(cat==='culture'){
+    fields = `
+      <label>Question</label><textarea id="af-q">${editing?item.q:''}</textarea>
+      <label>Réponse A</label><input type="text" id="af-opt0" value="${editing?item.opts[0].replace(/"/g,'&quot;'):''}">
+      <label>Réponse B</label><input type="text" id="af-opt1" value="${editing?item.opts[1].replace(/"/g,'&quot;'):''}">
+      <label>Réponse C</label><input type="text" id="af-opt2" value="${editing?item.opts[2].replace(/"/g,'&quot;'):''}">
+      <label>Réponse D</label><input type="text" id="af-opt3" value="${editing?item.opts[3].replace(/"/g,'&quot;'):''}">
+      <label>Index de la bonne réponse (0=A, 1=B, 2=C, 3=D)</label><input type="text" id="af-correct" value="${editing?item.correct:'0'}">
+      <label>Catégorie</label><input type="text" id="af-cat" value="${editing?item.cat:'Culture'}">
+    `;
+  } else if(cat==='undercover'){
+    fields = `
+      <label>Mot civil</label><input type="text" id="af-civil" value="${editing?item.civil.replace(/"/g,'&quot;'):''}">
+      <label>Mot Undercover</label><input type="text" id="af-undercover" value="${editing?item.undercover.replace(/"/g,'&quot;'):''}">
+    `;
+  } else {
+    fields = `<label>Texte</label><textarea id="af-text">${editing?item.text:''}</textarea>`;
+  }
+  const showEnc = (cat === 'qui' || cat === 'action' || cat === 'blindtest' || cat === 'culture');
+  return `
+    <div class="admin-form" id="admin-form-holder">
+      <p style="font-weight:700; margin-bottom:10px;">${editing ? 'Modifier cette entrée' : 'Ajouter une nouvelle entrée'}</p>
+      ${fields}
+      ${showEnc ? `<label>Coût en enculades pour cette entrée (optionnel, 1 à 5, laisser vide = aléatoire)</label>
+      <input type="text" id="af-enc" value="${editing && item.enc ? item.enc : ''}">` : ''}
+      <button class="primary" id="af-save-btn" style="margin-top:6px;">${editing ? 'Enregistrer les modifications' : 'Ajouter'}</button>
+    </div>
+  `;
+}
+
+function wireAdminForm(cat, editIndex){
+  const saveBtn = document.getElementById('af-save-btn');
+  if(!saveBtn) return;
+  saveBtn.addEventListener('click', ()=>{
+    const arr = getCatArray(cat);
+    const encEl = document.getElementById('af-enc');
+    let enc;
+    if(encEl){
+      const encRaw = encEl.value.trim();
+      enc = parseInt(encRaw);
+      if(isNaN(enc) || enc < 1 || enc > 5) enc = undefined;
+    }
+
+    let newItem;
+    if(cat==='blindtest' || cat==='blindtestMainstream'){
+      newItem = {
+        t: document.getElementById('af-title').value.trim(),
+        a: document.getElementById('af-artist').value.trim(),
+        y: document.getElementById('af-year').value.trim()
+      };
+    } else if(cat==='culture'){
+      newItem = {
+        q: document.getElementById('af-q').value.trim(),
+        opts: [0,1,2,3].map(n=>document.getElementById('af-opt'+n).value.trim()),
+        correct: parseInt(document.getElementById('af-correct').value) || 0,
+        cat: document.getElementById('af-cat').value.trim() || 'Culture'
+      };
+    } else if(cat==='undercover'){
+      newItem = {
+        civil: document.getElementById('af-civil').value.trim(),
+        undercover: document.getElementById('af-undercover').value.trim()
+      };
+    } else {
+      newItem = { text: document.getElementById('af-text').value.trim() };
+    }
+    if(enc !== undefined) newItem.enc = enc;
+
+    if(editIndex !== null){
+      arr[editIndex] = newItem;
+    } else {
+      arr.push(newItem);
+    }
+    persistData();
+    refillDeck(cat);
+    renderAdminEditor();
+  });
+}
+
+document.querySelectorAll('#music-service-spotify, #music-service-deezer, #music-service-apple').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#music-service-spotify, #music-service-deezer, #music-service-apple').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const service = btn.getAttribute('data-service');
+    ['spotify','deezer','apple'].forEach(s=>{
+      document.getElementById(`music-service-${s}-panel`).style.display = (s === service) ? 'block' : 'none';
+    });
+  });
+});
+document.getElementById('deezer-connect-btn').addEventListener('click', ()=>{
+  alert("Deezer n'est pas encore configuré. Il faut créer une app développeur gratuite sur developers.deezer.com pour l'activer — même principe que Spotify.");
+});
+document.getElementById('apple-connect-btn').addEventListener('click', ()=>{
+  alert("Apple Music n'est pas encore configuré. Il faut un compte développeur Apple payant (99$/an) pour utiliser MusicKit JS.");
+});
+
+renderPlayers();
+
+</script>
+</body>
+</html>
